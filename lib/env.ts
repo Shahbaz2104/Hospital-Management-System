@@ -31,7 +31,9 @@ if (!process.env.DATABASE_URL && process.env.MONGODB_URI) {
 const rawUrl = process.env.DATABASE_URL;
 if (rawUrl && !/mongodb(\+srv)?:\/\/.*\/[^/?]+/.test(rawUrl)) {
   const [base, query] = rawUrl.split("?");
-  process.env.DATABASE_URL = `${base}/hospital_management${query ? `?${query}` : ""}`;
+  process.env.DATABASE_URL = `${base.replace(/\/+$/, "")}/hospital_management${
+    query ? `?${query}` : ""
+  }`;
 }
 
 /**
