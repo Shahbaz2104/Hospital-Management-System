@@ -67,6 +67,36 @@ export const GET = route(async () => {
       })
     : [];
 
+  const trendStart = new Date(startOfDay);
+  trendStart.setDate(trendStart.getDate() - 6);
+  const trendGroups = perm("appointments:read")
+    ? await db.appointment.groupBy({
+        by: ["date"],
+        where: { date: { gte: trendStart, lte: endOfDay } },
+        _count: { _all: true },
+      })
+    : [];
+  const trendMap = new Map(
+    trendGroups.map((g) => [g.date.getTime(), g._count._all])
+  );
+  const appointmentsTrend = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(trendStart);
+    d.setDate(trendStart.getDate() + i);
+    return { date: d.toISOString(), count: trendMap.get(d.getTime()) ?? 0 };
+  });
+
+  const statusGroups = perm("appointments:read")
+    ? await db.appointment.groupBy({
+        by: ["status"],
+        where: { date: { gte: startOfDay, lte: endOfDay } },
+        _count: { _all: true },
+      })
+    : [];
+  const appointmentsByStatus = statusGroups.map((g) => ({
+    status: g.status,
+    count: g._count._all,
+  }));
+
   return ok({
     stats: {
       patients,
@@ -79,5 +109,8 @@ export const GET = route(async () => {
       availableBeds: bedByStatus.AVAILABLE ?? 0,
     },
     upcoming: todayAppointments,
+    appointmentsTrend,
+    appointmentsByStatus,
+    beds: Object.entries(bedByStatus).map(([status, count]) => ({ status, count })),
   });
 });

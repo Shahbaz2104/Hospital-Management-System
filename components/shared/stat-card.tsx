@@ -1,6 +1,9 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnimatedNumber } from "@/components/shared/animated-number";
 
 type StatCardProps = {
   label: string;
@@ -33,7 +36,11 @@ export function StatCard({
             <Skeleton className="mt-1.5 h-8 w-16" />
           ) : (
             <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight">
-              {value ?? "—"}
+              {typeof value === "number" ? (
+                <AnimatedNumber value={value} />
+              ) : (
+                value ?? "—"
+              )}
             </p>
           )}
           {hint && !loading && (

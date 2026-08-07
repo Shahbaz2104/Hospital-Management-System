@@ -104,6 +104,8 @@ model Patient {
   appointments Appointment[]
   admissions   Admission[]
   consultations Consultation[]
+  labOrders     LabOrder[]
+  radiologyOrders RadiologyOrder[]
 
   @@index([status])
 }
@@ -163,6 +165,75 @@ model Consultation {
   @@index([appointmentId])
 }
 
+// ---------------------------------------------------------------------------
+// Laboratory: test catalog + orders with sample collection & result entry
+// ---------------------------------------------------------------------------
+
+model LabTest {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String   @unique
+  code         String   @unique // e.g. CBC, LFT
+  category     String   @default("HEMATOLOGY") // HEMATOLOGY | BIOCHEMISTRY | MICROBIOLOGY | URINALYSIS | IMMUNOLOGY
+  unit         String?
+  normalRange  String?  // e.g. "4.5–11.0 x10^9/L"
+  price        Float    @default(0)
+  description  String?
+  active       Boolean  @default(true)
+  hospitalId   String?  @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model LabOrder {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderNo           String   @unique // e.g. LAB-0001
+  patientId         String   @db.ObjectId
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId          String?  @db.ObjectId
+  doctor            Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  priority          String   @default("ROUTINE") // ROUTINE | URGENT | STAT
+  status            String   @default("ORDERED") // ORDERED | SAMPLE_COLLECTED | COMPLETED | CANCELLED
+  tests             String   @default("[]") // JSON array of {testId, name, code, unit, normalRange}
+  results           String   @default("[]") // JSON array of {testId, name, value, unit, normalRange, flag}
+  sampleCollectedAt DateTime?
+  completedAt       DateTime?
+  notes             String?
+  createdById       String?  @db.ObjectId
+  hospitalId        String?  @db.ObjectId
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Radiology: imaging orders (X-Ray, MRI, CT, Ultrasound) with report upload
+// ---------------------------------------------------------------------------
+
+model RadiologyOrder {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderNo       String   @unique // e.g. RAD-0001
+  patientId     String   @db.ObjectId
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String?  @db.ObjectId
+  doctor        Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  modality      String   @default("XRAY") // XRAY | MRI | CT | ULTRASOUND
+  bodyPart      String?
+  status        String   @default("ORDERED") // ORDERED | SCHEDULED | COMPLETED | CANCELLED
+  scheduledAt   DateTime?
+  findings      String?  // Radiologist findings text
+  reports       String   @default("[]") // JSON array of {name, url, uploadedAt}
+  notes         String?
+  createdById   String?  @db.ObjectId
+  hospitalId    String?  @db.ObjectId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([status])
+}
+
 model Department {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String   @unique
@@ -202,6 +273,8 @@ model Doctor {
   appointments Appointment[]
   admissions   Admission[]
   consultations Consultation[]
+  labOrders     LabOrder[]
+  radiologyOrders RadiologyOrder[]
 }
 
 model Nurse {

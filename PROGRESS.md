@@ -17,7 +17,7 @@
 | 1 | Auth, Users, RBAC, Security, Audit Logs | DONE |
 | 2 | Master data (Departments, Doctors, Nurses, Rooms/Beds) | DONE |
 | 3 | Patients & Appointments (OPD/IPD) | DONE (incl. consultations, live bed dashboard) |
-| 4 | Laboratory & Radiology | PENDING |
+| 4 | Laboratory & Radiology | DONE (orders, catalog, results, reports, printable output) |
 | 5 | Pharmacy & Inventory | PENDING |
 | 6 | Billing, Payments, Insurance | PENDING |
 | 7 | HR & Payroll | PENDING |
@@ -113,6 +113,8 @@
 - [x] Phase 2 — Master data (Departments, Doctors, Nurses, Rooms/Beds)
 - [x] Phase 3 (core) — Patient detail, OPD queue + token slips, calendar view, IPD admissions/transfers/discharges
 - [x] Phase 3 (complete) — Consultations (vitals + prescriptions + diagnosis), live bed dashboard w/ patient names
+- [x] Phase 4 — Laboratory (catalog, orders, sample flow, results w/ flags, printable report) + Radiology (orders, scheduling, findings, attachments, printable report)
+- [x] UI/UX pass — fixed sidebar (content scrolls, nav stays), dashboard charts (7-day area, bed donut, animated status bar), animated stat counters
 
 | ID | Decision | Rationale |
 | -- | -------- | --------- |
