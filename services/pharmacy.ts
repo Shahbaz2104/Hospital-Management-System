@@ -51,9 +51,10 @@ async function nextNumber(kind: "po" | "tx" | "sale"): Promise<string> {
 // Medicines
 // ---------------------------------------------------------------------------
 
-export async function listMedicines(filters: { category?: string; status?: string } = {}) {
+export async function listMedicines(filters: { category?: string; status?: string; search?: string } = {}) {
   const where: Record<string, unknown> = {};
   if (filters.category && filters.category !== "ALL") where.category = filters.category;
+  if (filters.search) where.name = { contains: filters.search, mode: "insensitive" };
 
   const medicines = await db.medicine.findMany({
     where,

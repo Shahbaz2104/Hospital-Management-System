@@ -55,12 +55,16 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
-  doctor        Doctor?
-  nurse         Nurse?
-  employee      Employee?
-  patient       Patient[]
+  refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]
+  doctor           Doctor?
+  nurse            Nurse?
+  employee         Employee?
+  patient          Patient[]
+  issuedInvoices   Invoice[]
+  receivedPayments Payment[]
+  submittedClaims  InsuranceClaim[] @relation("ClaimSubmittedBy")
+  decidedClaims    InsuranceClaim[] @relation("ClaimDecidedBy")
 
   @@index([roleId])
 }
@@ -101,12 +105,14 @@ model Patient {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  appointments    Appointment[]
-  admissions      Admission[]
-  consultations   Consultation[]
-  labOrders       LabOrder[]
-  radiologyOrders RadiologyOrder[]
-  medicineSales   MedicineSale[]
+  appointments      Appointment[]
+  admissions        Admission[]
+  consultations     Consultation[]
+  labOrders         LabOrder[]
+  radiologyOrders   RadiologyOrder[]
+  medicineSales     MedicineSale[]
+  invoices          Invoice[]
+  insurancePolicies InsurancePolicy[]
 
   @@index([status])
 }
@@ -132,6 +138,7 @@ model Appointment {
   updatedAt    DateTime    @updatedAt
 
   consultations Consultation[]
+  invoices      Invoice[]
 
   @@index([patientId])
   @@index([doctorId])
@@ -160,6 +167,8 @@ model Consultation {
   hospitalId     String?      @db.ObjectId
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+
+  invoices Invoice[]
 
   @@index([patientId])
   @@index([doctorId])
@@ -361,6 +370,8 @@ model Admission {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  invoices Invoice[]
+
   @@index([patientId])
   @@index([status])
 }
@@ -383,25 +394,25 @@ model RefreshToken {
 // ============================================================================
 
 model Medicine {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  name         String   @unique
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  name         String    @unique
   genericName  String?
-  category     String   @default("GENERAL") // ANALGESIC | ANTIBIOTIC | ANTIPYRETIC | ANTACID | VITAMIN | ANTIALLERGIC | CARDIAC | DIABETIC | RESPIRATORY | GENERAL
+  category     String    @default("GENERAL") // ANALGESIC | ANTIBIOTIC | ANTIPYRETIC | ANTACID | VITAMIN | ANTIALLERGIC | CARDIAC | DIABETIC | RESPIRATORY | GENERAL
   manufacturer String?
-  unit         String   @default("tablet") // tablet | capsule | ml | mg | vial | strip
-  packSize     Int      @default(1)
-  price        Float    @default(0) // sell price per unit
-  cost         Float    @default(0) // cost per unit
-  stock        Int      @default(0)
-  reorderLevel Int      @default(10)
+  unit         String    @default("tablet") // tablet | capsule | ml | mg | vial | strip
+  packSize     Int       @default(1)
+  price        Float     @default(0) // sell price per unit
+  cost         Float     @default(0) // cost per unit
+  stock        Int       @default(0)
+  reorderLevel Int       @default(10)
   expiryDate   DateTime? // current batch expiry — drives expiry alerts
   storage      String? // e.g. "Store below 25°C", "Refrigerate"
   barcode      String?
   description  String?
-  active       Boolean  @default(true)
-  hospitalId   String?  @db.ObjectId
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  active       Boolean   @default(true)
+  hospitalId   String?   @db.ObjectId
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   stockTransactions StockTransaction[]
 
@@ -509,6 +520,160 @@ model MedicalEquipment {
 
   @@index([status])
   @@index([category])
+}
+
+// ============================================================================
+// Billing, Payments & Insurance
+// ============================================================================
+
+model InsuranceCompany {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String   @unique
+  code            String   @unique // e.g. IC-0001
+  phone           String?
+  email           String?
+  address         String?
+  coveragePercent Float    @default(80) // default coverage % for new policies
+  claimPhone      String? // claims hotline
+  notes           String?
+  active          Boolean  @default(true)
+  hospitalId      String?  @db.ObjectId
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  policies InsurancePolicy[]
+  claims   InsuranceClaim[]
+
+  @@index([active])
+}
+
+model InsurancePolicy {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  policyNumber    String           @unique // e.g. POL-0001
+  patientId       String           @db.ObjectId
+  patient         Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  companyId       String           @db.ObjectId
+  company         InsuranceCompany @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  coveragePercent Float            @default(80)
+  validFrom       DateTime?
+  validTo         DateTime?
+  status          String           @default("ACTIVE") // ACTIVE | EXPIRED | CANCELLED
+  notes           String?
+  hospitalId      String?          @db.ObjectId
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  invoices Invoice[]
+  claims   InsuranceClaim[]
+
+  @@index([patientId])
+  @@index([companyId])
+  @@index([status])
+}
+
+model Invoice {
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceNo         String           @unique // e.g. INV-0001
+  patientId         String           @db.ObjectId
+  patient           Patient          @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  admissionId       String?          @db.ObjectId
+  admission         Admission?       @relation(fields: [admissionId], references: [id], onDelete: SetNull)
+  appointmentId     String?          @db.ObjectId
+  appointment       Appointment?     @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  consultationId    String?          @db.ObjectId
+  consultation      Consultation?    @relation(fields: [consultationId], references: [id], onDelete: SetNull)
+  insurancePolicyId String?          @db.ObjectId
+  insurancePolicy   InsurancePolicy? @relation(fields: [insurancePolicyId], references: [id], onDelete: SetNull)
+  subtotal          Float            @default(0)
+  discount          Float            @default(0)
+  discountType      String           @default("FIXED") // FIXED | PERCENT
+  taxRate           Float            @default(0)
+  taxAmount         Float            @default(0)
+  insuranceCoverage Float            @default(0) // covered by insurer
+  total             Float            @default(0) // net due from patient
+  paid              Float            @default(0)
+  status            String           @default("PENDING") // PENDING | PARTIAL | PAID | REFUNDED | CANCELLED
+  notes             String?
+  dueAt             DateTime?
+  issuedById        String?          @db.ObjectId
+  issuedBy          User?            @relation(fields: [issuedById], references: [id], onDelete: SetNull)
+  hospitalId        String?          @db.ObjectId
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  items    InvoiceItem[]
+  payments Payment[]
+  claim    InsuranceClaim?
+
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model InvoiceItem {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceId   String   @db.ObjectId
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  type        String   @default("OTHER") // CONSULTATION | LAB | RADIOLOGY | PHARMACY | WARD | PROCEDURE | OTHER
+  description String
+  quantity    Float    @default(1)
+  unitPrice   Float    @default(0)
+  amount      Float    @default(0)
+  refType     String? // labOrder | radiologyOrder | medicineSale | consultation | admission
+  refId       String?
+  createdAt   DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+model Payment {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  paymentNo    String    @unique // e.g. PAY-0001
+  invoiceId    String    @db.ObjectId
+  invoice      Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount       Float // positive = payment, negative = refund
+  method       String    @default("CASH") // CASH | CARD | BANK_TRANSFER | MOBILE_WALLET | INSURANCE
+  reference    String? // transaction id / cheque no
+  status       String    @default("COMPLETED") // COMPLETED | PENDING | REFUNDED
+  notes        String?
+  refundOfId   String?   @db.ObjectId
+  refundOf     Payment?  @relation("PaymentRefund", fields: [refundOfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  refunds      Payment[] @relation("PaymentRefund")
+  receivedById String?   @db.ObjectId
+  receivedBy   User?     @relation(fields: [receivedById], references: [id], onDelete: SetNull)
+  paidAt       DateTime  @default(now())
+  hospitalId   String?   @db.ObjectId
+  createdAt    DateTime  @default(now())
+
+  @@index([invoiceId])
+  @@index([method])
+  @@index([paidAt])
+}
+
+model InsuranceClaim {
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+  claimNo            String            @unique // e.g. CLM-0001
+  invoiceId          String            @unique @db.ObjectId // one claim per invoice
+  invoice            Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  policyId           String            @db.ObjectId
+  policy             InsurancePolicy   @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  amount             Float             @default(0)
+  status             String            @default("SUBMITTED") // SUBMITTED | APPROVED | REJECTED | PAID
+  claimRef           String? // company-side claim reference
+  submittedById      String?           @db.ObjectId
+  submittedBy        User?             @relation("ClaimSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull)
+  decisionById       String?           @db.ObjectId
+  decisionBy         User?             @relation("ClaimDecidedBy", fields: [decisionById], references: [id], onDelete: SetNull)
+  decidedAt          DateTime?
+  notes              String?
+  hospitalId         String?           @db.ObjectId
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  insuranceCompany   InsuranceCompany? @relation(fields: [insuranceCompanyId], references: [id])
+  insuranceCompanyId String?           @db.ObjectId
+
+  @@index([policyId])
+  @@index([status])
 }
 
 // ============================================================================

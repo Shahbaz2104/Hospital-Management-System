@@ -19,7 +19,7 @@
 | 3 | Patients & Appointments (OPD/IPD) | DONE (incl. consultations, live bed dashboard) |
 | 4 | Laboratory & Radiology | DONE (orders, catalog, results, reports, printable output) |
 | 5 | Pharmacy & Inventory | DONE (medicines, dispensing, purchase orders, stock ledger, equipment, suppliers) |
-| 6 | Billing, Payments, Insurance | PENDING |
+| 6 | Billing, Payments, Insurance | PARTIAL — Billing + Payments + insurance BACKEND done; Insurance UI pending |
 | 7 | HR & Payroll | PENDING |
 | 8 | Reports, Analytics, Notifications | PENDING |
 | 9 | Emergency, Global Search, Settings | PENDING |
@@ -102,6 +102,64 @@
     - `postcss` (bundled by next) + `sharp` — Next 15 will keep vulnerability until Next 16; spec pins Next 15 → leave.
     - `uuid` in `exceljs` (moderate) — tracked; revisit in Billing/Reports export phase.
 
+### Session 3 — UI/UX polish pass (committed `c8ec713`)
+
+**2026-08-08**
+
+22. **Shared design language** — refined across the app:
+    - `app/globals.css` — `.data-table` utility (tinted header, row hover, dividers), `.card-hover` micro-interaction, `.fade-in` animation.
+    - `components/ui/table.tsx` — TableHead (uppercase micro-type, tinted bg, tracking), TableCell (`px-4 py-3`), TableRow hover.
+    - `components/data/data-table.tsx` — SearchX empty state, "Showing X–Y of Z" footer, shadow wrapper, `bg-muted/40` header.
+    - `components/shared/stat-card.tsx` — gradient icon tile + ring, hover glow, group-hover icon scale.
+    - `components/shared/page-header.tsx` — border-b; `components/ui/button.tsx` — default shadow + hover lift; `components/ui/input.tsx` — smooth focus/hover transitions; `components/layout/sidebar.tsx` — active accent bar + font-semibold.
+    - `data-table` class applied to 5 raw tables (lab, pharmacy, inventory ×2, +1).
+
+23. **Gate**: typecheck + lint + build green. Committed `c8ec713` "ui: refine shared design language across tables, stat cards, nav".
+
+### Session 4 — Phase 6: Billing, Payments, Insurance (backend + 2 pages)
+
+**2026-08-08**
+
+24. **Schema** (`prisma/schema.prisma`, validated + client regenerated):
+    - New models: `InsuranceCompany`, `InsurancePolicy`, `Invoice`, `InvoiceItem` (own `createdAt`), `Payment` (self-ref `PaymentRefund`, NoAction on delete/update), `InsuranceClaim` (`invoiceId @unique @db.ObjectId`).
+    - Back-relations on Patient/Appointment/Consultation/Admission/User; User's claim relations named `"ClaimSubmittedBy"`/`"ClaimDecidedBy"`.
+    - Invoice money flow: subtotal → discount (FIXED/PERCENT) → tax → insuranceCoverage → total; status PENDING/PARTIAL/PAID/REFUNDED/CANCELLED.
+
+25. **`validators/billing.ts`** — zod: invoiceItem, createInvoice, recordPayment, refund, insuranceCompany, insurancePolicy (policyNumber optional), createClaim, claimDecision.
+
+26. **`services/billing.ts`** — `nextNumber` (INV-/PAY-/CLM-/POL-/IC-XXXX), `computeInvoiceTotals`, invoice status calc; list/create/cancel invoice; list/record payment (overpayment guard); refund (negative payment linked via `refundOfId`); `revenueStats` (today/month/outstanding/pending); insurance companies/policies CRUD; claims: create (validates policy + coverage), decide (APPROVED → auto-payment via INSURANCE method + claim PAID). `createInsurancePolicy` also writes patient.insuranceProvider/insuranceNumber. Audit actions: INVOICE_CREATED/CANCELLED, PAYMENT_RECORDED/REFUNDED, INSURANCE_COMPANY_CREATED/UPDATED, INSURANCE_POLICY_CREATED, INSURANCE_CLAIM_SUBMITTED/DECIDED.
+
+27. **API** — `app/api/billing/*`: `invoices` GET/POST + `[id]` GET/PATCH(cancel), `payments` GET/POST + `payments/refund` POST, `claims` GET/POST + `[id]` PATCH(decide), `companies` GET/POST + `[id]` PATCH, `policies` GET/POST, `summary` GET. All behind `requirePermission` (billing/payments/insurance read/manage).
+
+28. **UI**:
+    - `components/features/billing/billing-page.tsx` — stat cards, status tabs, search, invoice table, CreateInvoiceDialog (useFieldArray items, patient/policy selects, live discount/tax/insurance totals), InvoiceDetailDialog (items, payments, refund, cancel, print via `window.open` + print CSS), RecordPaymentDialog, RefundDialog.
+    - `components/features/billing/payments-page.tsx` — method tabs, search, collected/refunded/net stat cards.
+    - Wrappers `app/(dashboard)/billing/page.tsx` + `payments/page.tsx` with permission guards (nav/perms were already wired).
+
+29. **`services/pharmacy.ts` + `app/api/medicines/route.ts`** — added `search` param.
+
+### Session 5 — Scroll fix, sticky navbar, global search
+
+**2026-08-08**
+
+30. **Scroll bug root cause** — `AppShell` scrolled an inner div while Lenis ran in `root` mode → the window never scrolled (wheel appeared dead, GSAP ScrollTrigger broken).
+31. **Fix** — `AppShell` is now a `"use client"` window-scroll layout: `min-h-svh` wrapper, sticky `Sidebar` + sticky `Topbar`, content column with `md:pl-64 | md:pl-16` + `transition-[padding-left]`; sidebar collapse state lifted into AppShell; sidebar nav marked `data-lenis-prevent` so its own wheel scrolling works; Lenis keeps `root: true`. GSAP ScrollTrigger + wheel scrolling work again.
+32. **Global search** — `components/layout/global-search.tsx`: Popover + React Query (debounced, enabled ≥2 chars) hitting `/patients`, `/doctors`, `/medicines`, `/billing/invoices` in parallel; grouped results navigate to `/patients/[id]`, `/doctors/[id]`, `/pharmacy`, `/billing`; Enter opens first result, Esc closes. Wired into `topbar.tsx` (replaces the decorative input).
+
+### Session 6 — Verification (typecheck/lint/build + browser)
+
+**2026-08-08**
+
+33. **Gates** — `npm run typecheck` clean; `npm run lint` 0 errors (2 pre-existing warnings in `scripts/`); `npm run build` succeeds.
+34. **API smoke** — `POST /api/auth/login` via curl on `http://localhost:3001` → 200 (Ayesha Rahman, SUPER_ADMIN). Dev server on :3001 (port 3000 holds a stale server from an earlier session — now broken because `.next` was rebuilt; ignore/kill it).
+35. **Browser verification** (`verify-fix.mts`, Playwright) — found the dev server hydrates slowly on first compile (earlier "login dead" reports were this flake, not an app bug; script now waits for hydration before interacting). Verified:
+    - Login → redirects to `/dashboard`.
+    - Wheel scroll moves the window (0 → 886px on a tall page; Lenis + ScrollTrigger fine).
+    - Sidebar collapse 256px → 64px with content reflow.
+    - Global search: typing "Ayesha" opens results popover and fires `/api/patients?search=Ayesha` + `/api/billing/invoices?search=Ayesha`.
+    - `/billing` and `/payments` render their billing content.
+36. **Uncommitted** — Phase 6, scroll/search fixes, and `verify-fix.mts` (temp) are NOT yet committed; last commit remains `c8ec713`.
+
 ---
 
 ## Session milestones
@@ -116,6 +174,12 @@
 - [x] Phase 4 — Laboratory (catalog, orders, sample flow, results w/ flags, printable report) + Radiology (orders, scheduling, findings, attachments, printable report)
 - [x] UI/UX pass — fixed sidebar (content scrolls, nav stays), dashboard charts (7-day area, bed donut, animated status bar), animated stat counters
 - [x] Phase 5 — Pharmacy (10 medicines, categories, expiry & low-stock alerts, dispense w/ printable receipt, purchase orders → stock in) + Inventory (6 equipment w/ warranty/maintenance, suppliers, stock ledger)
+- [x] UI/UX polish — shared table/card/button/input design language (commit `c8ec713`)
+- [x] Phase 6 (backend + 2 pages) — Billing (invoices, discounts/tax, payments, refunds, revenue stats) + Payments + Insurance (companies, policies, claims w/ auto-payment on approval)
+- [x] Scroll fix — AppShell window-scroll layout, sticky sidebar/topbar, collapse state, Lenis root preserved
+- [x] Global search — patients/doctors/medicines/invoices popover in topbar
+- [x] Browser verification — login, scroll, collapse, search, /billing, /payments (Playwright)
+- [ ] Phase 6 (insurance UI) — companies/policies/claims management page (approve/reject)
 
 | ID | Decision | Rationale |
 | -- | -------- | --------- |
@@ -132,6 +196,10 @@
 | D11 | ESLint via FlatCompat (`next/core-web-vitals`, `next/typescript`) | eslint-config-next@15 ships legacy-shape configs |
 | D12 | Keep Next 15 (advisory gaps accepted) | Spec pins Next.js 15; fixes would require breaking Next 16 |
 | TBD | MongoDB + Prisma relation/transaction strategy | Docs under sub-agents — verify against `node_modules/next`. @ its DISCLAIMER edition | |
+| D13 | Invoice number prefix `INV-XXXX` (PAY-/CLM-/POL-/IC-) | Human-friendly, sequence-based IDs |
+| D14 | Insurance coverage as an invoice-level amount (covered by policy) | Bill shows patient share vs insurer share; claim ties to invoice |
+| D15 | Claim APPROVED auto-records an INSURANCE payment | Keeps AR correct without double entry |
+| D16 | Money always formatted `$X.XX` via shared `money()` helper | Consistent presentation + avoids float display bugs |
 
 > New decisions appended as the build proceeds.
 

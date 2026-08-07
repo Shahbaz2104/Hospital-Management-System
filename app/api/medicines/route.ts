@@ -10,6 +10,7 @@ export const GET = route(async (req) => {
   const items = await listMedicines({
     category: params.get("category") ?? "ALL",
     status: params.get("status") ?? "ALL",
+    search: params.get("search") ?? undefined,
   });
   return ok({ items });
 });

@@ -66,9 +66,22 @@ Every role has granular permissions enforced on both the UI (route guards) and t
 
 Dashboard · Patients · Doctors · Nurses · Staff · Appointments · OPD · IPD · Departments · Rooms & Beds · Laboratory · Radiology · Pharmacy · Medicine Inventory · Billing · Payments · Insurance · Admission & Discharge · HR · Payroll · Reports · Notifications · Emergency · Medical Records · Prescriptions · Analytics · Audit Logs · Settings
 
+## Phase Status
+
+| Phase | Scope | Status |
+| ----- | ----- | ------ |
+| 0 | Scaffolding, deps, folder structure, base layout, motion stack | DONE |
+| 1 | Auth, Users, RBAC, Security, Audit Logs | DONE |
+| 2 | Master data (Departments, Doctors, Nurses, Rooms/Beds) | DONE |
+| 3 | Patients & Appointments (OPD/IPD) | DONE |
+| 4 | Laboratory & Radiology | DONE |
+| 5 | Pharmacy & Inventory | DONE |
+| 6 | Billing, Payments, Insurance | PARTIAL — Billing + Payments + insurance backend done; Insurance UI pending |
+| 7–10 | HR & Payroll, Reports/Analytics, Emergency/Search/Settings, Polish | PENDING |
+
 ## Database Models
 
-User, Role, Permission, Patient, Doctor, Department, Appointment, Admission, Discharge, Room, Bed, Prescription, Medicine, Inventory, Supplier, Purchase, LaboratoryTest, RadiologyTest, Invoice, Payment, Insurance, Employee, Attendance, Payroll, Notification, MedicalRecord, AuditLog, Settings, Hospital, EmergencyCase.
+User, Role, Permission, Patient, Doctor, Department, Appointment, Admission, Discharge, Room, Bed, Prescription, Medicine, Inventory, Supplier, Purchase, LaboratoryTest, RadiologyTest, Invoice, InvoiceItem, Payment, InsuranceCompany, InsurancePolicy, InsuranceClaim, Employee, Attendance, Payroll, Notification, MedicalRecord, AuditLog, Settings, Hospital, EmergencyCase.
 
 ## Design
 

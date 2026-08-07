@@ -11,14 +11,21 @@ import type { SessionUser } from "@/lib/auth/session";
 
 import { Button } from "@/components/ui/button";
 
-export function Sidebar({ user }: { user: SessionUser }) {
+export function Sidebar({
+  user,
+  collapsed,
+  onToggle,
+}: {
+  user: SessionUser;
+  collapsed: boolean;
+  onToggle: (collapsed: boolean) => void;
+}) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = React.useState(false);
 
   return (
     <aside
       className={cn(
-        "hidden h-svh shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex",
+        "sticky top-0 hidden h-svh shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex",
         "transition-[width] duration-200",
         collapsed ? "w-16" : "w-64"
       )}
@@ -42,7 +49,7 @@ export function Sidebar({ user }: { user: SessionUser }) {
         )}
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4" data-lenis-prevent>
         {navConfig.map((section, i) => {
           const items = section.items.filter(
             (item) => !item.permission || can(user, item.permission as never)
@@ -99,7 +106,7 @@ export function Sidebar({ user }: { user: SessionUser }) {
           variant="ghost"
           size={collapsed ? "icon" : "default"}
           className="gap-2 text-muted-foreground"
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={() => onToggle(!collapsed)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <ChevronsLeft
