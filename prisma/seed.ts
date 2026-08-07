@@ -352,6 +352,86 @@ async function seedConsultations() {
   console.log(`✔ ${completed.length} consultations`);
 }
 
+const MEDICINE_SEED = [
+  { name: "Paracetamol", genericName: "Acetaminophen", category: "ANALGESIC", manufacturer: "MediPharm", unit: "tablet", packSize: 10, price: 1.5, cost: 0.8, stock: 480, reorderLevel: 100, expiryDate: new Date(Date.now() + 300 * 24 * 3600 * 1000) },
+  { name: "Amoxicillin", genericName: "Amoxicillin trihydrate", category: "ANTIBIOTIC", manufacturer: "BioCure", unit: "capsule", packSize: 15, price: 4.2, cost: 2.1, stock: 260, reorderLevel: 80, expiryDate: new Date(Date.now() + 240 * 24 * 3600 * 1000) },
+  { name: "Amlodipine", genericName: "Amlodipine besylate", category: "CARDIAC", manufacturer: "CardioLab", unit: "tablet", packSize: 30, price: 6.0, cost: 3.2, stock: 12, reorderLevel: 60, expiryDate: new Date(Date.now() + 180 * 24 * 3600 * 1000) },
+  { name: "Metformin", genericName: "Metformin HCl", category: "DIABETIC", manufacturer: "GlucoMed", unit: "tablet", packSize: 30, price: 5.0, cost: 2.6, stock: 340, reorderLevel: 90, expiryDate: new Date(Date.now() + 210 * 24 * 3600 * 1000) },
+  { name: "Salbutamol", genericName: "Salbutamol sulfate", category: "RESPIRATORY", manufacturer: "AirflowRx", unit: "inhaler", packSize: 1, price: 9.5, cost: 5.4, stock: 75, reorderLevel: 25, expiryDate: new Date(Date.now() + 45 * 24 * 3600 * 1000) },
+  { name: "Cetirizine", genericName: "Cetirizine HCl", category: "ANTIALLERGIC", manufacturer: "AllerGen", unit: "tablet", packSize: 10, price: 2.0, cost: 0.9, stock: 410, reorderLevel: 100, expiryDate: new Date(Date.now() + 365 * 24 * 3600 * 1000) },
+  { name: "Omeprazole", genericName: "Omeprazole", category: "ANTACID", manufacturer: "GastroMed", unit: "capsule", packSize: 14, price: 3.8, cost: 1.9, stock: 18, reorderLevel: 70, expiryDate: new Date(Date.now() + 150 * 24 * 3600 * 1000) },
+  { name: "Vitamin D3", genericName: "Cholecalciferol", category: "VITAMIN", manufacturer: "NutriWell", unit: "tablet", packSize: 30, price: 4.0, cost: 1.7, stock: 520, reorderLevel: 120, expiryDate: new Date(Date.now() + 400 * 24 * 3600 * 1000) },
+  { name: "Ibuprofen", genericName: "Ibuprofen", category: "ANALGESIC", manufacturer: "MediPharm", unit: "tablet", packSize: 10, price: 1.8, cost: 0.8, stock: 35, reorderLevel: 100, expiryDate: new Date(Date.now() + 200 * 24 * 3600 * 1000) },
+  { name: "Losartan", genericName: "Losartan potassium", category: "CARDIAC", manufacturer: "CardioLab", unit: "tablet", packSize: 28, price: 7.5, cost: 4.0, stock: 150, reorderLevel: 50, expiryDate: new Date(Date.now() + 330 * 24 * 3600 * 1000) },
+];
+
+const SUPPLIER_SEED = [
+  { name: "MediPharm Distributors", contactPerson: "Sarah Khan", phone: "+1 555 011 2200", email: "sales@medipharm.example" },
+  { name: "BioCure Supplies", contactPerson: "James Lee", phone: "+1 555 011 3300", email: "orders@biocure.example" },
+  { name: "CardioLab Medical", contactPerson: "Priya Nair", phone: "+1 555 011 4400", email: "supply@cardiolab.example" },
+];
+
+const EQUIPMENT_SEED = [
+  { name: "ECG Monitor", category: "MONITORING", manufacturer: "Philips", serialNo: "PH-ECG-2210", purchaseCost: 4200, warrantyExpiry: new Date(Date.now() + 700 * 24 * 3600 * 1000), location: "ICU — Room 1", nextMaintenance: new Date(Date.now() + 30 * 24 * 3600 * 1000) },
+  { name: "Ventilator", category: "SUPPORT", manufacturer: "Draeger", serialNo: "DR-VNT-8841", purchaseCost: 18500, warrantyExpiry: new Date(Date.now() + 500 * 24 * 3600 * 1000), location: "ICU — Room 2", nextMaintenance: new Date(Date.now() - 5 * 24 * 3600 * 1000) },
+  { name: "Ultrasound Machine", category: "DIAGNOSTIC", manufacturer: "GE Healthcare", serialNo: "GE-US-3317", purchaseCost: 24000, warrantyExpiry: new Date(Date.now() + 40 * 24 * 3600 * 1000), location: "Radiology", nextMaintenance: new Date(Date.now() + 60 * 24 * 3600 * 1000) },
+  { name: "Defibrillator", category: "SUPPORT", manufacturer: "Zoll", serialNo: "ZL-DEF-9922", purchaseCost: 3900, warrantyExpiry: new Date(Date.now() + 900 * 24 * 3600 * 1000), location: "Emergency", nextMaintenance: new Date(Date.now() + 90 * 24 * 3600 * 1000) },
+  { name: "Surgical Cautery", category: "SURGICAL", manufacturer: "Stryker", serialNo: "ST-CAU-5510", purchaseCost: 6100, warrantyExpiry: new Date(Date.now() - 10 * 24 * 3600 * 1000), location: "OT — Room 1", nextMaintenance: new Date(Date.now() + 45 * 24 * 3600 * 1000) },
+  { name: "Infusion Pump", category: "SUPPORT", manufacturer: "B Braun", serialNo: "BB-INF-1204", purchaseCost: 2100, warrantyExpiry: new Date(Date.now() + 800 * 24 * 3600 * 1000), location: "Ward B", nextMaintenance: new Date(Date.now() + 20 * 24 * 3600 * 1000) },
+];
+
+async function seedPharmacy() {
+  for (const s of SUPPLIER_SEED) {
+    await prisma.supplier.upsert({
+      where: { name: s.name },
+      update: {},
+      create: s,
+    });
+  }
+  console.log(`✔ ${SUPPLIER_SEED.length} suppliers`);
+
+  for (const m of MEDICINE_SEED) {
+    await prisma.medicine.upsert({
+      where: { name: m.name },
+      update: {},
+      create: m,
+    });
+  }
+  console.log(`✔ ${MEDICINE_SEED.length} medicines`);
+
+  const supplier = await prisma.supplier.findFirst({ where: { name: SUPPLIER_SEED[0].name } });
+  const amox = await prisma.medicine.findUnique({ where: { name: "Amoxicillin" } });
+  if (supplier && amox) {
+    const poNo = "PO-0001";
+    await prisma.purchaseOrder.upsert({
+      where: { poNo },
+      update: {},
+      create: {
+        poNo,
+        supplierId: supplier.id,
+        items: JSON.stringify([
+          { medicineId: amox.id, name: amox.name, quantity: 300, unitCost: 2.1, batchNo: "AMX-2207", expiryDate: new Date(Date.now() + 240 * 24 * 3600 * 1000).toISOString() },
+        ]),
+        total: 630,
+        status: "ORDERED",
+      },
+    });
+    console.log("✔ 1 purchase order (PO-0001)");
+  }
+
+  for (const e of EQUIPMENT_SEED) {
+    const existing = await prisma.medicalEquipment.findUnique({ where: { code: `EQ-${String(EQUIPMENT_SEED.indexOf(e) + 1).padStart(4, "0")}` } });
+    if (existing) continue;
+    await prisma.medicalEquipment.create({
+      data: {
+        code: `EQ-${String(EQUIPMENT_SEED.indexOf(e) + 1).padStart(4, "0")}`,
+        ...e,
+      },
+    });
+  }
+  console.log(`✔ ${EQUIPMENT_SEED.length} equipment`);
+}
+
 async function main() {
   console.log("Seeding HMS database…");
 
@@ -378,6 +458,7 @@ async function main() {
   await seedPatients();
   await seedAppointments();
   await seedConsultations();
+  await seedPharmacy();
 
   console.log("Seeding complete.");
 }

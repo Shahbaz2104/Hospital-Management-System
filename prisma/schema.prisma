@@ -36,24 +36,24 @@ model Hospital {
 }
 
 model User {
-  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
-  email              String   @unique
-  passwordHash       String
-  firstName          String
-  lastName           String
-  phone              String?
-  title              String?
-  avatarUrl          String?
-  roleId             String   @db.ObjectId
-  role               Role     @relation(fields: [roleId], references: [id])
-  hospitalId         String?  @db.ObjectId
-  hospital           Hospital? @relation(fields: [hospitalId], references: [id])
-  status             String   @default("ACTIVE") // ACTIVE | SUSPENDED | PENDING
-  lastLoginAt        DateTime?
-  passwordChangedAt  DateTime?
-  emailVerified      Boolean  @default(false)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  email             String    @unique
+  passwordHash      String
+  firstName         String
+  lastName          String
+  phone             String?
+  title             String?
+  avatarUrl         String?
+  roleId            String    @db.ObjectId
+  role              Role      @relation(fields: [roleId], references: [id])
+  hospitalId        String?   @db.ObjectId
+  hospital          Hospital? @relation(fields: [hospitalId], references: [id])
+  status            String    @default("ACTIVE") // ACTIVE | SUSPENDED | PENDING
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  emailVerified     Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
@@ -70,10 +70,10 @@ model User {
 // ============================================================================
 
 model Patient {
-  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
-  patientNo          String   @unique // auto-generated e.g. PT-0001
-  userId             String?  @db.ObjectId
-  user               User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id                 String    @id @default(auto()) @map("_id") @db.ObjectId
+  patientNo          String    @unique // auto-generated e.g. PT-0001
+  userId             String?   @db.ObjectId
+  user               User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   firstName          String
   lastName           String
   dob                DateTime?
@@ -96,39 +96,40 @@ model Patient {
   insurancePlan      String?
   insuranceExpiry    DateTime?
   documents          String? // JSON array of {name, url}
-  status             String   @default("ACTIVE") // ACTIVE | INACTIVE
-  hospitalId         String?  @db.ObjectId
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  status             String    @default("ACTIVE") // ACTIVE | INACTIVE
+  hospitalId         String?   @db.ObjectId
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  appointments Appointment[]
-  admissions   Admission[]
-  consultations Consultation[]
-  labOrders     LabOrder[]
+  appointments    Appointment[]
+  admissions      Admission[]
+  consultations   Consultation[]
+  labOrders       LabOrder[]
   radiologyOrders RadiologyOrder[]
+  medicineSales   MedicineSale[]
 
   @@index([status])
 }
 
 model Appointment {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  tokenNo       String   @unique // e.g. TKN-0001 (OPD queue)
-  patientId     String   @db.ObjectId
-  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctorId      String?  @db.ObjectId
-  doctor        Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
-  departmentId  String?  @db.ObjectId
-  department    Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  date          DateTime @db.Date
-  startTime     String // "HH:mm"
-  endTime       String
-  type          String   @default("WALKIN") // ONLINE | WALKIN | FOLLOWUP
-  status        String   @default("PENDING") // PENDING | CONFIRMED | COMPLETED | CANCELLED | MISSED
-  reason        String?
-  notes         String?
-  createdById   String?  @db.ObjectId
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  tokenNo      String      @unique // e.g. TKN-0001 (OPD queue)
+  patientId    String      @db.ObjectId
+  patient      Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId     String?     @db.ObjectId
+  doctor       Doctor?     @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  departmentId String?     @db.ObjectId
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  date         DateTime    @db.Date
+  startTime    String // "HH:mm"
+  endTime      String
+  type         String      @default("WALKIN") // ONLINE | WALKIN | FOLLOWUP
+  status       String      @default("PENDING") // PENDING | CONFIRMED | COMPLETED | CANCELLED | MISSED
+  reason       String?
+  notes        String?
+  createdById  String?     @db.ObjectId
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   consultations Consultation[]
 
@@ -143,22 +144,22 @@ model Appointment {
 // ---------------------------------------------------------------------------
 
 model Consultation {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  consultationNo  String   @unique // e.g. OPD-0001
-  appointmentId   String?  @db.ObjectId
-  appointment     Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  patientId       String   @db.ObjectId
-  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctorId        String?  @db.ObjectId
-  doctor          Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
-  diagnosis       String?
-  notes           String?
-  followUpDate    DateTime?
-  vitals          String?  // JSON array of {name, value, unit}
-  prescriptions   String?  // JSON array of {medicine, dose, frequency, duration, instructions}
-  hospitalId      String?  @db.ObjectId
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  consultationNo String       @unique // e.g. OPD-0001
+  appointmentId  String?      @db.ObjectId
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patientId      String       @db.ObjectId
+  patient        Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId       String?      @db.ObjectId
+  doctor         Doctor?      @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  diagnosis      String?
+  notes          String?
+  followUpDate   DateTime?
+  vitals         String? // JSON array of {name, value, unit}
+  prescriptions  String? // JSON array of {medicine, dose, frequency, duration, instructions}
+  hospitalId     String?      @db.ObjectId
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([patientId])
   @@index([doctorId])
@@ -170,38 +171,38 @@ model Consultation {
 // ---------------------------------------------------------------------------
 
 model LabTest {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  name         String   @unique
-  code         String   @unique // e.g. CBC, LFT
-  category     String   @default("HEMATOLOGY") // HEMATOLOGY | BIOCHEMISTRY | MICROBIOLOGY | URINALYSIS | IMMUNOLOGY
-  unit         String?
-  normalRange  String?  // e.g. "4.5–11.0 x10^9/L"
-  price        Float    @default(0)
-  description  String?
-  active       Boolean  @default(true)
-  hospitalId   String?  @db.ObjectId
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  code        String   @unique // e.g. CBC, LFT
+  category    String   @default("HEMATOLOGY") // HEMATOLOGY | BIOCHEMISTRY | MICROBIOLOGY | URINALYSIS | IMMUNOLOGY
+  unit        String?
+  normalRange String? // e.g. "4.5–11.0 x10^9/L"
+  price       Float    @default(0)
+  description String?
+  active      Boolean  @default(true)
+  hospitalId  String?  @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model LabOrder {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  orderNo           String   @unique // e.g. LAB-0001
-  patientId         String   @db.ObjectId
-  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctorId          String?  @db.ObjectId
-  doctor            Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
-  priority          String   @default("ROUTINE") // ROUTINE | URGENT | STAT
-  status            String   @default("ORDERED") // ORDERED | SAMPLE_COLLECTED | COMPLETED | CANCELLED
-  tests             String   @default("[]") // JSON array of {testId, name, code, unit, normalRange}
-  results           String   @default("[]") // JSON array of {testId, name, value, unit, normalRange, flag}
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  orderNo           String    @unique // e.g. LAB-0001
+  patientId         String    @db.ObjectId
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId          String?   @db.ObjectId
+  doctor            Doctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  priority          String    @default("ROUTINE") // ROUTINE | URGENT | STAT
+  status            String    @default("ORDERED") // ORDERED | SAMPLE_COLLECTED | COMPLETED | CANCELLED
+  tests             String    @default("[]") // JSON array of {testId, name, code, unit, normalRange}
+  results           String    @default("[]") // JSON array of {testId, name, value, unit, normalRange, flag}
   sampleCollectedAt DateTime?
   completedAt       DateTime?
   notes             String?
-  createdById       String?  @db.ObjectId
-  hospitalId        String?  @db.ObjectId
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdById       String?   @db.ObjectId
+  hospitalId        String?   @db.ObjectId
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([patientId])
   @@index([status])
@@ -212,113 +213,113 @@ model LabOrder {
 // ---------------------------------------------------------------------------
 
 model RadiologyOrder {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  orderNo       String   @unique // e.g. RAD-0001
-  patientId     String   @db.ObjectId
-  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctorId      String?  @db.ObjectId
-  doctor        Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
-  modality      String   @default("XRAY") // XRAY | MRI | CT | ULTRASOUND
-  bodyPart      String?
-  status        String   @default("ORDERED") // ORDERED | SCHEDULED | COMPLETED | CANCELLED
-  scheduledAt   DateTime?
-  findings      String?  // Radiologist findings text
-  reports       String   @default("[]") // JSON array of {name, url, uploadedAt}
-  notes         String?
-  createdById   String?  @db.ObjectId
-  hospitalId    String?  @db.ObjectId
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  orderNo     String    @unique // e.g. RAD-0001
+  patientId   String    @db.ObjectId
+  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId    String?   @db.ObjectId
+  doctor      Doctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  modality    String    @default("XRAY") // XRAY | MRI | CT | ULTRASOUND
+  bodyPart    String?
+  status      String    @default("ORDERED") // ORDERED | SCHEDULED | COMPLETED | CANCELLED
+  scheduledAt DateTime?
+  findings    String? // Radiologist findings text
+  reports     String    @default("[]") // JSON array of {name, url, uploadedAt}
+  notes       String?
+  createdById String?   @db.ObjectId
+  hospitalId  String?   @db.ObjectId
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([patientId])
   @@index([status])
 }
 
 model Department {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @unique
-  code        String   @unique
-  description String?
-  headDoctorId String? @db.ObjectId
-  headDoctor  Doctor?  @relation("DepartmentHead", fields: [headDoctorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  hospitalId  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String   @unique
+  code         String   @unique
+  description  String?
+  headDoctorId String?  @db.ObjectId
+  headDoctor   Doctor?  @relation("DepartmentHead", fields: [headDoctorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  hospitalId   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  doctors   Doctor[]
-  nurses    Nurse[]
-  employees Employee[]
-  rooms     Room[]
+  doctors      Doctor[]
+  nurses       Nurse[]
+  employees    Employee[]
+  rooms        Room[]
   appointments Appointment[]
 }
 
 model Doctor {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId          String   @unique @db.ObjectId
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  departmentId    String?  @db.ObjectId
-  department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String       @unique @db.ObjectId
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId    String?      @db.ObjectId
+  department      Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   headOf          Department[] @relation("DepartmentHead")
   specialization  String?
   qualification   String?
-  experienceYears Int      @default(0)
-  consultationFee Float    @default(0)
-  available       Boolean  @default(true)
-  schedule        String?  // JSON schedule
+  experienceYears Int          @default(0)
+  consultationFee Float        @default(0)
+  available       Boolean      @default(true)
+  schedule        String? // JSON schedule
   bio             String?
   licenseNumber   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  appointments Appointment[]
-  admissions   Admission[]
-  consultations Consultation[]
-  labOrders     LabOrder[]
+  appointments    Appointment[]
+  admissions      Admission[]
+  consultations   Consultation[]
+  labOrders       LabOrder[]
   radiologyOrders RadiologyOrder[]
 }
 
 model Nurse {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String   @unique @db.ObjectId
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  departmentId String? @db.ObjectId
-  department  Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  ward        String?
-  shift       String   @default("DAY") // DAY | NIGHT | ROTATING
-  licenseNo   String?
-  designation String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String      @unique @db.ObjectId
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId String?     @db.ObjectId
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  ward         String?
+  shift        String      @default("DAY") // DAY | NIGHT | ROTATING
+  licenseNo    String?
+  designation  String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model Employee {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String   @unique @db.ObjectId
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  departmentId String?  @db.ObjectId
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String      @unique @db.ObjectId
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId String?     @db.ObjectId
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  employeeNo   String?  @unique
+  employeeNo   String?     @unique
   designation  String?
   joiningDate  DateTime?
-  salary       Float    @default(0)
-  status       String   @default("ACTIVE")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  salary       Float       @default(0)
+  status       String      @default("ACTIVE")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model Room {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  number       String   @unique
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  number       String      @unique
   name         String?
-  type         String   @default("GENERAL") // ICU | GENERAL | PRIVATE | SEMI_PRIVATE | OT
-  floor        Int      @default(1)
-  capacity     Int      @default(2)
-  ratePerDay   Float    @default(0)
-  status       String   @default("AVAILABLE")
-  departmentId String?  @db.ObjectId
+  type         String      @default("GENERAL") // ICU | GENERAL | PRIVATE | SEMI_PRIVATE | OT
+  floor        Int         @default(1)
+  capacity     Int         @default(2)
+  ratePerDay   Float       @default(0)
+  status       String      @default("AVAILABLE")
+  departmentId String?     @db.ObjectId
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   beds Bed[]
 
@@ -326,15 +327,15 @@ model Room {
 }
 
 model Bed {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  number         String   @unique
-  roomId         String   @db.ObjectId
-  room           Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  status         String   @default("AVAILABLE") // AVAILABLE | OCCUPIED | RESERVED | CLEANING
-  patientId      String?  @db.ObjectId
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  number             String   @unique
+  roomId             String   @db.ObjectId
+  room               Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  status             String   @default("AVAILABLE") // AVAILABLE | OCCUPIED | RESERVED | CLEANING
+  patientId          String?  @db.ObjectId
   currentAdmissionId String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   admissions Admission[]
 
@@ -342,23 +343,23 @@ model Bed {
 }
 
 model Admission {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  admissionNo   String   @unique // e.g. IPD-0001
-  patientId     String   @db.ObjectId
-  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  bedId         String?  @db.ObjectId
-  bed           Bed?     @relation(fields: [bedId], references: [id], onDelete: SetNull)
-  doctorId      String?  @db.ObjectId
-  doctor        Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
-  admittedAt    DateTime @default(now())
-  dischargeAt   DateTime?
-  status        String   @default("ADMITTED") // ADMITTED | TRANSFERRED | DISCHARGED
-  reason        String?
-  diagnosis     String?
-  notes         String?
-  hospitalId    String?  @db.ObjectId
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  admissionNo String    @unique // e.g. IPD-0001
+  patientId   String    @db.ObjectId
+  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bedId       String?   @db.ObjectId
+  bed         Bed?      @relation(fields: [bedId], references: [id], onDelete: SetNull)
+  doctorId    String?   @db.ObjectId
+  doctor      Doctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  admittedAt  DateTime  @default(now())
+  dischargeAt DateTime?
+  status      String    @default("ADMITTED") // ADMITTED | TRANSFERRED | DISCHARGED
+  reason      String?
+  diagnosis   String?
+  notes       String?
+  hospitalId  String?   @db.ObjectId
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([patientId])
   @@index([status])
@@ -378,30 +379,163 @@ model RefreshToken {
 }
 
 // ============================================================================
+// Pharmacy: medicines, suppliers, purchase orders, sales, stock ledger
+// ============================================================================
+
+model Medicine {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String   @unique
+  genericName  String?
+  category     String   @default("GENERAL") // ANALGESIC | ANTIBIOTIC | ANTIPYRETIC | ANTACID | VITAMIN | ANTIALLERGIC | CARDIAC | DIABETIC | RESPIRATORY | GENERAL
+  manufacturer String?
+  unit         String   @default("tablet") // tablet | capsule | ml | mg | vial | strip
+  packSize     Int      @default(1)
+  price        Float    @default(0) // sell price per unit
+  cost         Float    @default(0) // cost per unit
+  stock        Int      @default(0)
+  reorderLevel Int      @default(10)
+  expiryDate   DateTime? // current batch expiry — drives expiry alerts
+  storage      String? // e.g. "Store below 25°C", "Refrigerate"
+  barcode      String?
+  description  String?
+  active       Boolean  @default(true)
+  hospitalId   String?  @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stockTransactions StockTransaction[]
+
+  @@index([category])
+  @@index([stock])
+}
+
+model Supplier {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String   @unique
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  taxId         String?
+  notes         String?
+  active        Boolean  @default(true)
+  hospitalId    String?  @db.ObjectId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+  equipment      MedicalEquipment[]
+}
+
+model PurchaseOrder {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  poNo        String    @unique // e.g. PO-0001
+  supplierId  String    @db.ObjectId
+  supplier    Supplier  @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  items       String    @default("[]") // JSON array of {medicineId, name, quantity, unitCost}
+  total       Float     @default(0)
+  status      String    @default("ORDERED") // ORDERED | RECEIVED | CANCELLED
+  receivedAt  DateTime?
+  notes       String?
+  createdById String?   @db.ObjectId
+  hospitalId  String?   @db.ObjectId
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+}
+
+model StockTransaction {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  txNo         String    @unique // e.g. ST-0001
+  medicineId   String    @db.ObjectId
+  medicine     Medicine  @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  type         String // IN | OUT | ADJUSTMENT
+  reason       String? // PURCHASE | SALE | DAMAGE | EXPIRED | STOCKTAKE
+  quantity     Int // positive for IN, negative for OUT
+  balanceAfter Int
+  batchNo      String?
+  expiryDate   DateTime?
+  ref          String? // PO-0001 / SALE-0001
+  createdById  String?   @db.ObjectId
+  hospitalId   String?   @db.ObjectId
+  createdAt    DateTime  @default(now())
+
+  @@index([medicineId])
+  @@index([type])
+}
+
+model MedicineSale {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  saleNo        String   @unique // e.g. SALE-0001
+  patientId     String   @db.ObjectId
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  items         String   @default("[]") // JSON array of {medicineId, name, quantity, unitPrice}
+  total         Float    @default(0)
+  status        String   @default("COMPLETED")
+  notes         String?
+  dispensedById String?  @db.ObjectId
+  hospitalId    String?  @db.ObjectId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// Inventory: medical equipment (assets) with warranty & maintenance
+// ============================================================================
+
+model MedicalEquipment {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  code            String    @unique // e.g. EQ-0001
+  category        String    @default("DIAGNOSTIC") // DIAGNOSTIC | SURGICAL | MONITORING | SUPPORT | OTHER
+  manufacturer    String?
+  supplierId      String?   @db.ObjectId
+  supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  serialNo        String?
+  purchaseDate    DateTime?
+  purchaseCost    Float     @default(0)
+  warrantyExpiry  DateTime?
+  location        String? // room / ward
+  status          String    @default("OPERATIONAL") // OPERATIONAL | UNDER_MAINTENANCE | OUT_OF_SERVICE | DISPOSED
+  nextMaintenance DateTime?
+  notes           String?
+  hospitalId      String?   @db.ObjectId
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status])
+  @@index([category])
+}
+
+// ============================================================================
 // RBAC
 // ============================================================================
 
 model Role {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @unique // SUPER_ADMIN | HOSPITAL_ADMIN | DOCTOR | ...
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String    @unique // SUPER_ADMIN | HOSPITAL_ADMIN | DOCTOR | ...
   label       String
   description String?
-  isSystem    Boolean  @default(false)
-  hospitalId  String?  @db.ObjectId
+  isSystem    Boolean   @default(false)
+  hospitalId  String?   @db.ObjectId
   hospital    Hospital? @relation(fields: [hospitalId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  users         User[]
+  users           User[]
   rolePermissions RolePermission[]
 }
 
 model Permission {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  key             String   @unique // e.g. patients:read
-  label           String
-  module          String   // patients | billing | pharmacy | ...
-  createdAt       DateTime @default(now())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique // e.g. patients:read
+  label     String
+  module    String // patients | billing | pharmacy | ...
+  createdAt DateTime @default(now())
 
   rolePermissions RolePermission[]
 }
@@ -427,7 +561,7 @@ model AuditLog {
   action    String // LOGIN | LOGOUT | USER_CREATED | PATIENT_CREATED | ...
   entity    String?
   entityId  String?
-  meta      String?  // JSON string payload
+  meta      String? // JSON string payload
   ipAddress String?
   userAgent String?
   createdAt DateTime @default(now())
@@ -438,12 +572,12 @@ model AuditLog {
 }
 
 model Settings {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  hospitalId String  @db.ObjectId
-  hospital  Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  key       String
-  value     String   // JSON-encoded
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  hospitalId String   @db.ObjectId
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  key        String
+  value      String // JSON-encoded
+  updatedAt  DateTime @updatedAt
 
   @@unique([hospitalId, key])
 }

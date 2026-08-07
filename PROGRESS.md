@@ -18,7 +18,7 @@
 | 2 | Master data (Departments, Doctors, Nurses, Rooms/Beds) | DONE |
 | 3 | Patients & Appointments (OPD/IPD) | DONE (incl. consultations, live bed dashboard) |
 | 4 | Laboratory & Radiology | DONE (orders, catalog, results, reports, printable output) |
-| 5 | Pharmacy & Inventory | PENDING |
+| 5 | Pharmacy & Inventory | DONE (medicines, dispensing, purchase orders, stock ledger, equipment, suppliers) |
 | 6 | Billing, Payments, Insurance | PENDING |
 | 7 | HR & Payroll | PENDING |
 | 8 | Reports, Analytics, Notifications | PENDING |
@@ -115,6 +115,7 @@
 - [x] Phase 3 (complete) — Consultations (vitals + prescriptions + diagnosis), live bed dashboard w/ patient names
 - [x] Phase 4 — Laboratory (catalog, orders, sample flow, results w/ flags, printable report) + Radiology (orders, scheduling, findings, attachments, printable report)
 - [x] UI/UX pass — fixed sidebar (content scrolls, nav stays), dashboard charts (7-day area, bed donut, animated status bar), animated stat counters
+- [x] Phase 5 — Pharmacy (10 medicines, categories, expiry & low-stock alerts, dispense w/ printable receipt, purchase orders → stock in) + Inventory (6 equipment w/ warranty/maintenance, suppliers, stock ledger)
 
 | ID | Decision | Rationale |
 | -- | -------- | --------- |

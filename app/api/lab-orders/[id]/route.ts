@@ -66,7 +66,7 @@ export const PATCH = route(async (req: Request, ctx) => {
 });
 
 export const DELETE = route(async (req, ctx) => {
-  const actor = await requirePermission("laboratory:manage");
+  await requirePermission("laboratory:manage");
   const { id } = await ctx.params;
 
   const existing = await db.labOrder.findUnique({ where: { id } });
