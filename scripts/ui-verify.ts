@@ -73,7 +73,7 @@ async function main() {
     await page.screenshot({ path: `${outDir}/02-dashboard.png`, fullPage: false });
     console.log("[ui] logged in → dashboard");
 
-    for (const route of ["departments", "doctors", "nurses", "rooms"]) {
+    for (const route of ["departments", "doctors", "nurses", "rooms", "patients", "appointments"]) {
       await page.goto(`${base}/${route}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(900);
       const title = await page.title();

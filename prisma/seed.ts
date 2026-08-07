@@ -202,6 +202,88 @@ async function seedMasterData() {
   console.log(`✔ ${roomSeed.length} rooms + beds`);
 }
 
+async function seedPatients() {
+  const hospital = await prisma.hospital.findFirst();
+  const hospitalId = hospital?.id ?? undefined;
+
+  const patientSeed = [
+    { firstName: "Zara", lastName: "Ali", dob: new Date("1992-03-14"), bloodGroup: "B+", phone: "+1 555 010 2001", allergies: "Penicillin", insuranceProvider: "BlueShield" },
+    { firstName: "David", lastName: "Chen", dob: new Date("1985-07-22"), bloodGroup: "A+", phone: "+1 555 010 2002", insuranceProvider: "Aetna" },
+    { firstName: "Maria", lastName: "Lopez", dob: new Date("1978-11-02"), bloodGroup: "AB-", phone: "+1 555 010 2003", allergies: "Sulfa", insuranceProvider: "Medicare" },
+    { firstName: "Omar", lastName: "Wilson", dob: new Date("1960-05-30"), bloodGroup: "O-", phone: "+1 555 010 2004", insuranceProvider: "Aetna" },
+    { firstName: "Aisha", lastName: "Khan", dob: new Date("2001-12-09"), bloodGroup: "B-", phone: "+1 555 010 2005", allergies: "Latex" },
+    { firstName: "Peter", lastName: "Novak", dob: new Date("1995-01-18"), bloodGroup: "A-", phone: "+1 555 010 2006", insuranceProvider: "BlueShield" },
+    { firstName: "Lena", lastName: "Fischer", dob: new Date("1988-09-25"), bloodGroup: "O+", phone: "+1 555 010 2007", allergies: "Peanuts", insuranceProvider: "Cigna" },
+    { firstName: "Sam", lastName: "Okafor", dob: new Date("2015-04-12"), bloodGroup: "B+", phone: "+1 555 010 2008", insuranceProvider: "Medicaid" },
+    { firstName: "Rachel", lastName: "Green", dob: new Date("1970-02-28"), bloodGroup: "AB+", phone: "+1 555 010 2009", insuranceProvider: "Medicare" },
+    { firstName: "Tom", lastName: "Baldwin", dob: new Date("1999-08-03"), bloodGroup: "A+", phone: "+1 555 010 2010", allergies: "Aspirin" },
+  ];
+
+  for (const p of patientSeed) {
+    const existing = await prisma.patient.findFirst({
+      where: { firstName: p.firstName, lastName: p.lastName },
+    });
+    if (existing) continue;
+    const count = await prisma.patient.count();
+    await prisma.patient.create({
+      data: {
+        patientNo: `PT-${String(count + 1).padStart(4, "0")}`,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        dob: p.dob,
+        bloodGroup: p.bloodGroup,
+        phone: p.phone,
+        allergies: p.allergies,
+        insuranceProvider: p.insuranceProvider,
+        hospitalId,
+      },
+    });
+  }
+  console.log(`✔ ${patientSeed.length} patients`);
+}
+
+async function seedAppointments() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const doctors = await prisma.doctor.findMany({ include: { user: true } });
+  const doctorId = doctors[0]?.id ?? undefined;
+  const patients = await prisma.patient.findMany({ take: 6 });
+
+  let token = 1;
+  const starts = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "15:00"];
+  const statuses: { status: string; type: string }[] = [
+    { status: "CONFIRMED", type: "WALKIN" },
+    { status: "CONFIRMED", type: "ONLINE" },
+    { status: "PENDING", type: "WALKIN" },
+    { status: "COMPLETED", type: "FOLLOWUP" },
+    { status: "CONFIRMED", type: "ONLINE" },
+  ];
+
+  for (let i = 0; i < statuses.length && patients[i]; i++) {
+    const tokenNo = `TKN-${String(token).padStart(4, "0")}`;
+    const start = starts[i] ?? "09:00";
+    const startMinutes = parseInt(start.slice(0, 2)) * 60 + parseInt(start.slice(3, 5));
+    const endMinutes = startMinutes + 30;
+    const end = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`;
+    await prisma.appointment.upsert({
+      where: { tokenNo },
+      update: {},
+      create: {
+        tokenNo,
+        patientId: patients[i].id,
+        doctorId,
+        date: today,
+        startTime: start,
+        endTime: end,
+        type: statuses[i].type,
+        status: statuses[i].status,
+      },
+    });
+    token++;
+  }
+  console.log(`✔ ${statuses.length} appointments today`);
+}
+
 async function main() {
   console.log("Seeding HMS database…");
 
@@ -225,6 +307,8 @@ async function main() {
   await seedRoles();
   await seedUsers();
   await seedMasterData();
+  await seedPatients();
+  await seedAppointments();
 
   console.log("Seeding complete.");
 }

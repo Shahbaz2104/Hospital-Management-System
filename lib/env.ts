@@ -21,14 +21,36 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
 });
 
+/**
+ * During `next build` (Vercel) the env vars are not yet provisioned, so we
+ * must not throw at module scope — only fail fast at runtime (dev/start).
+ */
+const isBuildPhase =
+  process.env.NEXT_PHASE === "phase-production-build" ||
+  process.env.NEXT_PHASE === "phase-development-build";
+
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error(
-    "❌ Invalid environment variables:",
-    parsed.error.flatten().fieldErrors
-  );
-  throw new Error("Invalid environment variables — check .env / .env.example");
+  if (isBuildPhase) {
+    console.warn(
+      "⚠ Env vars not set during build — using placeholders (runtime will fail fast if unset)."
+    );
+  } else {
+    console.error(
+      "❌ Invalid environment variables:",
+      parsed.error.flatten().fieldErrors
+    );
+    throw new Error("Invalid environment variables — check .env / .env.example");
+  }
 }
 
-export const env = parsed.data;
+const buildFallback = {
+  DATABASE_URL: "mongodb://localhost:27017/build-placeholder",
+  JWT_ACCESS_SECRET: "build-placeholder-access-secret",
+  JWT_REFRESH_SECRET: "build-placeholder-refresh-secret",
+};
+
+export const env = parsed.success
+  ? parsed.data
+  : envSchema.parse({ ...buildFallback, ...process.env });
