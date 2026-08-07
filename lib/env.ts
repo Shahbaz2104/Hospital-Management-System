@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL (or MONGODB_URI) is required"),
   JWT_ACCESS_SECRET: z.string().min(16),
   JWT_REFRESH_SECRET: z.string().min(16),
   JWT_ACCESS_EXPIRES_IN: z.coerce.number().default(900),
@@ -20,6 +20,19 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
 });
+
+// Accept MONGODB_URI as an alias for DATABASE_URL (common on Vercel).
+if (!process.env.DATABASE_URL && process.env.MONGODB_URI) {
+  process.env.DATABASE_URL = process.env.MONGODB_URI;
+}
+
+// Prisma (MongoDB) requires a database name in the connection string.
+// Normalize e.g. "mongodb.net/?retryWrites=..." → "...mongodb.net/hospital_management?retryWrites=..."
+const rawUrl = process.env.DATABASE_URL;
+if (rawUrl && !/mongodb(\+srv)?:\/\/.*\/[^/?]+/.test(rawUrl)) {
+  const [base, query] = rawUrl.split("?");
+  process.env.DATABASE_URL = `${base}/hospital_management${query ? `?${query}` : ""}`;
+}
 
 /**
  * During `next build` (Vercel) the env vars are not yet provisioned, so we
