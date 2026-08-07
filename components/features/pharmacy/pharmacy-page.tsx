@@ -320,7 +320,7 @@ export function PharmacyPage() {
                 No medicines in this category yet.
               </p>
             ) : (
-              <table className="w-full text-sm">
+              <table className="data-table w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-3">Medicine</th>

@@ -7,7 +7,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Search } from "lucide-react";
+import { Search, SearchX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,13 +104,13 @@ export function DataTable<TData>({
         </div>
       )}
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card shadow-sm">
         <Table>
           <TableHeader>
             {tableInstance.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
+              <TableRow key={hg.id} className="border-b hover:bg-transparent">
                 {hg.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} className="bg-muted/40">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -137,12 +137,13 @@ export function DataTable<TData>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-32 text-center"
+                  className="h-40 text-center"
                 >
-                  <p className="text-sm text-muted-foreground">
-                    No results found
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground/70">
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-muted">
+                    <SearchX className="size-5 text-muted-foreground" />
+                  </div>
+                  <p className="mt-3 text-sm font-medium">No results found</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Try adjusting your search or filters.
                   </p>
                 </TableCell>
@@ -166,35 +167,45 @@ export function DataTable<TData>({
         </Table>
       </div>
 
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1 || loading}
-              onClick={() => onPageChange?.(page - 1)}
-            >
-              Previous
-            </Button>
-          </PaginationItem>
-          <PaginationItem>
-            <span className="px-4 text-sm text-muted-foreground">
-              Page {page} of {totalPages}
+      {total > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Showing{" "}
+            <span className="font-medium text-foreground">
+              {(page - 1) * pageSize + 1}
             </span>
-          </PaginationItem>
-          <PaginationItem>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages || loading}
-              onClick={() => onPageChange?.(page + 1)}
-            >
-              Next
-            </Button>
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+            –<span className="font-medium text-foreground">
+              {Math.min(page * pageSize, total)}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-foreground">{total}</span>
+          </p>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || loading}
+                  onClick={() => onPageChange?.(page - 1)}
+                >
+                  Previous
+                </Button>
+              </PaginationItem>
+              <PaginationItem>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => onPageChange?.(page + 1)}
+                >
+                  Next
+                </Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }

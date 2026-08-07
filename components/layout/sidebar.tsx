@@ -65,13 +65,16 @@ export function Sidebar({ user }: { user: SessionUser }) {
                     href={item.href}
                     title={collapsed ? item.title : undefined}
                     className={cn(
-                      "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                       collapsed && "justify-center px-0",
                       active
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
                         : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
                     )}
                   >
+                    {!collapsed && active && (
+                      <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+                    )}
                     {IconComp && <IconComp className="size-4 shrink-0" />}
                     {!collapsed && (
                       <>

@@ -318,7 +318,7 @@ export function LaboratoryPage() {
               No tests in the catalog yet. Add one to start ordering.
             </p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="data-table w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-4 py-3">Test</th>

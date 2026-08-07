@@ -313,7 +313,7 @@ export function InventoryPage() {
               No equipment registered yet.
             </p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="data-table w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-4 py-3">Equipment</th>
@@ -400,7 +400,7 @@ export function InventoryPage() {
               No suppliers yet — add one to create purchase orders.
             </p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="data-table w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-4 py-3">Supplier</th>
@@ -431,7 +431,7 @@ export function InventoryPage() {
               No stock movements yet — receive a purchase order or log a stock adjustment.
             </p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="data-table w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-4 py-3">Ref</th>
