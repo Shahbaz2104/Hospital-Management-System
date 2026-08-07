@@ -16,7 +16,7 @@
 | 0 | Scaffolding, deps, folder structure, base layout | DONE |
 | 1 | Auth, Users, RBAC, Security, Audit Logs | DONE |
 | 2 | Master data (Departments, Doctors, Nurses, Rooms/Beds) | DONE |
-| 3 | Patients & Appointments (OPD/IPD) | IN PROGRESS |
+| 3 | Patients & Appointments (OPD/IPD) | ~DONE (calendar + IPD live dashboard remain) |
 | 4 | Laboratory & Radiology | PENDING |
 | 5 | Pharmacy & Inventory | PENDING |
 | 6 | Billing, Payments, Insurance | PENDING |
@@ -109,7 +109,9 @@
 - [x] Deps, shadcn UI kit, folder structure, envs
 - [x] Motion stack (GSAP/Lenis/anime.js) wired into shell
 - [x] ESLint + typecheck + build + dev boot green
-- [ ] Phase 1 — Auth, Users, RBAC, Security, Audit Logs (NEXT)
+- [x] Phase 1 — Auth, Users, RBAC, Security, Audit Logs
+- [x] Phase 2 — Master data (Departments, Doctors, Nurses, Rooms/Beds)
+- [x] Phase 3 (core) — Patient detail, OPD queue + token slips, calendar view, IPD admissions/transfers/discharges
 
 | ID | Decision | Rationale |
 | -- | -------- | --------- |

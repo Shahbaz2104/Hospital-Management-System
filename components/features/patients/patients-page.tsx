@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -149,7 +150,10 @@ export function PatientsPage() {
             )
           : null;
         return (
-          <div className="flex items-center gap-3">
+          <Link
+            href={`/patients/${p.id}`}
+            className="flex items-center gap-3 rounded-md transition-colors hover:bg-muted/40"
+          >
             <Avatar className="size-9">
               <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
                 {p.firstName[0]}
@@ -165,7 +169,7 @@ export function PatientsPage() {
                 {age !== null && <span> · {age} yrs</span>}
               </p>
             </div>
-          </div>
+          </Link>
         );
       },
     },

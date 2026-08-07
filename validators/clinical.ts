@@ -46,5 +46,15 @@ export const appointmentStatusSchema = z.object({
   status: z.enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED", "MISSED"]),
 });
 
+export const rescheduleSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  startTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:mm format"),
+  endTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:mm format"),
+});
+
 export type PatientInput = z.infer<typeof patientSchema>;
 export type AppointmentInput = z.infer<typeof appointmentSchema>;

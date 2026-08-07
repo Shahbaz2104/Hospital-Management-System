@@ -102,6 +102,7 @@ model Patient {
   updatedAt          DateTime @updatedAt
 
   appointments Appointment[]
+  admissions   Admission[]
 
   @@index([status])
 }
@@ -169,6 +170,7 @@ model Doctor {
   updatedAt       DateTime @updatedAt
 
   appointments Appointment[]
+  admissions   Admission[]
 }
 
 model Nurse {
@@ -230,6 +232,31 @@ model Bed {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  admissions Admission[]
+
+  @@index([status])
+}
+
+model Admission {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  admissionNo   String   @unique // e.g. IPD-0001
+  patientId     String   @db.ObjectId
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bedId         String?  @db.ObjectId
+  bed           Bed?     @relation(fields: [bedId], references: [id], onDelete: SetNull)
+  doctorId      String?  @db.ObjectId
+  doctor        Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  admittedAt    DateTime @default(now())
+  dischargeAt   DateTime?
+  status        String   @default("ADMITTED") // ADMITTED | TRANSFERRED | DISCHARGED
+  reason        String?
+  diagnosis     String?
+  notes         String?
+  hospitalId    String?  @db.ObjectId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([patientId])
   @@index([status])
 }
 

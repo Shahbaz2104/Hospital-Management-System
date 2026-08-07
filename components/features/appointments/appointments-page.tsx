@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
+import { AppointmentCalendar } from "@/components/features/appointments/appointment-calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -100,6 +101,7 @@ export function AppointmentsPage() {
   const [open, setOpen] = React.useState(false);
   const [day, setDay] = React.useState(todayISO);
   const [statusFilter, setStatusFilter] = React.useState("ALL");
+  const [view, setView] = React.useState<"list" | "calendar">("list");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["appointments", day, statusFilter],
@@ -110,6 +112,16 @@ export function AppointmentsPage() {
         date: day,
         status: statusFilter === "ALL" ? undefined : statusFilter,
       }),
+  });
+
+  const { data: calendarData, refetch: refetchCalendar } = useQuery({
+    queryKey: ["appointments", "calendar"],
+    queryFn: () =>
+      apiGet<{ items: AppointmentRow[]; meta: { total: number } }>("/appointments", {
+        page: 1,
+        pageSize: 500,
+      }),
+    enabled: view === "calendar",
   });
 
   const { data: patients } = useQuery({
@@ -356,24 +368,43 @@ export function AppointmentsPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Input
-          type="date"
-          className="w-auto"
-          value={day}
-          onChange={(e) => setDay(e.target.value)}
-        />
-        <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+        <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")}>
           <TabsList>
-            <TabsTrigger value="ALL">All</TabsTrigger>
-            <TabsTrigger value="PENDING">Pending</TabsTrigger>
-            <TabsTrigger value="CONFIRMED">Confirmed</TabsTrigger>
-            <TabsTrigger value="COMPLETED">Completed</TabsTrigger>
-            <TabsTrigger value="CANCELLED">Cancelled</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
           </TabsList>
         </Tabs>
+        {view === "list" && (
+          <>
+            <Input
+              type="date"
+              className="w-auto"
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+            />
+            <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+              <TabsList>
+                <TabsTrigger value="ALL">All</TabsTrigger>
+                <TabsTrigger value="PENDING">Pending</TabsTrigger>
+                <TabsTrigger value="CONFIRMED">Confirmed</TabsTrigger>
+                <TabsTrigger value="COMPLETED">Completed</TabsTrigger>
+                <TabsTrigger value="CANCELLED">Cancelled</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </>
+        )}
       </div>
 
-      <div className="space-y-3">
+      {view === "calendar" ? (
+        <AppointmentCalendar
+          appointments={calendarData?.items ?? []}
+          onChanged={() => {
+            refetch();
+            refetchCalendar();
+          }}
+        />
+      ) : (
+        <div className="space-y-3">
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -463,7 +494,8 @@ export function AppointmentsPage() {
             );
           })
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
