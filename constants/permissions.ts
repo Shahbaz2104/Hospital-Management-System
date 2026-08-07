@@ -33,6 +33,8 @@ export type PermissionKey =
   | "inventory:read"
   | "inventory:manage"
   | "prescriptions:read"
+  | "consultations:read"
+  | "consultations:manage"
   | "prescriptions:create"
   | "billing:read"
   | "billing:manage"
@@ -91,6 +93,8 @@ export const ALL_PERMISSIONS: PermissionKey[] = [
   "inventory:manage",
   "prescriptions:read",
   "prescriptions:create",
+  "consultations:read",
+  "consultations:manage",
   "billing:read",
   "billing:manage",
   "payments:read",
@@ -149,6 +153,8 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     "pharmacy:read",
     "prescriptions:read",
     "prescriptions:create",
+    "consultations:read",
+    "consultations:manage",
     "records:read",
     "emergency:read",
     "profile:read",
@@ -167,6 +173,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     "laboratory:read",
     "pharmacy:read",
     "prescriptions:read",
+    "consultations:read",
     "records:read",
     "emergency:read",
     "profile:read",

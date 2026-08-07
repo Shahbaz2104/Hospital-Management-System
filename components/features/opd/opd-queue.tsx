@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
+import { ConsultationDialog } from "@/components/features/opd/consultation-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ const todayISO = format(new Date(), "yyyy-MM-dd");
 
 export function OpdQueue() {
   const [day, setDay] = React.useState(todayISO);
+  const [consulting, setConsulting] = React.useState<QueueRow | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["opd", day],
@@ -158,8 +160,7 @@ export function OpdQueue() {
       </div>
 
       <div className="space-y-3">
-        {isLoading ? (
-          <div className="space-y-3">
+        {isLoading ? (          <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-20 w-full" />
             ))}
@@ -218,9 +219,18 @@ export function OpdQueue() {
                     </Button>
                   )}
                   {a.status === "CONFIRMED" && (
-                    <Button size="sm" variant="outline" onClick={() => setStatus(a.id, "COMPLETED", "Completed")}>
-                      Complete
-                    </Button>
+                    <>
+                      <Button size="sm" onClick={() => setConsulting(a)}>
+                        Consult
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setStatus(a.id, "COMPLETED", "Completed")}
+                      >
+                        Complete
+                      </Button>
+                    </>
                   )}
                   {(a.status === "PENDING" || a.status === "CONFIRMED") && (
                     <Button
@@ -241,6 +251,24 @@ export function OpdQueue() {
           })
         )}
       </div>
+
+      <ConsultationDialog
+        open={!!consulting}
+        onOpenChange={(open) => {
+          if (!open) setConsulting(null);
+        }}
+        patient={{
+          id: consulting?.patient.id ?? "",
+          patientNo: consulting?.patient.patientNo ?? "",
+          firstName: consulting?.patient.firstName ?? "",
+          lastName: consulting?.patient.lastName ?? "",
+        }}
+        appointmentId={consulting?.id}
+        onSaved={() => {
+          setConsulting(null);
+          refetch();
+        }}
+      />
     </div>
   );
 }

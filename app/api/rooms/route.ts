@@ -27,7 +27,20 @@ export const GET = route(async (req: Request) => {
       where,
       include: {
         department: { select: { id: true, name: true, code: true } },
-        beds: { orderBy: { number: "asc" } },
+        beds: {
+          include: {
+            admissions: {
+              where: { status: { in: ["ADMITTED", "TRANSFERRED"] } },
+              include: {
+                patient: {
+                  select: { id: true, firstName: true, lastName: true, patientNo: true },
+                },
+              },
+              take: 1,
+            },
+          },
+          orderBy: { number: "asc" },
+        },
         _count: { select: { beds: true } },
       },
       orderBy: { floor: "asc" },
@@ -37,7 +50,17 @@ export const GET = route(async (req: Request) => {
   ]);
 
   return ok({
-    items: rooms,
+    items: rooms.map((room) => ({
+      ...room,
+      beds: room.beds.map((b) => ({
+        id: b.id,
+        number: b.number,
+        status: b.status,
+        patientId: b.patientId,
+        currentAdmissionId: b.currentAdmissionId,
+        patient: b.admissions[0]?.patient ?? null,
+      })),
+    })),
     meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
   });
 });

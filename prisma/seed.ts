@@ -295,6 +295,63 @@ async function seedAppointments() {
   console.log(`✔ ${statuses.length} appointments today`);
 }
 
+async function seedConsultations() {
+  const completed = await prisma.appointment.findMany({
+    where: { status: "COMPLETED" },
+    include: { patient: true, doctor: true },
+    take: 2,
+  });
+
+  if (completed.length === 0) {
+    console.log(`✔ 0 consultations (no completed appointments yet)`);
+    return;
+  }
+
+  let seq = 1;
+  for (const appt of completed) {
+    const consultationNo = `OPD-${String(seq).padStart(4, "0")}`;
+    await prisma.consultation.upsert({
+      where: { consultationNo },
+      update: {},
+      create: {
+        consultationNo,
+        appointmentId: appt.id,
+        patientId: appt.patientId,
+        doctorId: appt.doctorId,
+        diagnosis: "Hypertension, stable on medication",
+        notes: "Advised low-sodium diet and light exercise.",
+        followUpDate: new Date(Date.now() + 14 * 24 * 3600 * 1000),
+        vitals: JSON.stringify([
+          { name: "Temperature", value: "36.8", unit: "°C" },
+          { name: "Pulse", value: "78", unit: "bpm" },
+          { name: "Blood pressure", value: "128/84", unit: "mmHg" },
+          { name: "SpO₂", value: "98", unit: "%" },
+          { name: "Resp. rate", value: "16", unit: "/min" },
+          { name: "Weight", value: "72", unit: "kg" },
+        ]),
+        prescriptions: JSON.stringify([
+          {
+            medicine: "Amlodipine",
+            dose: "5mg",
+            frequency: "1× daily",
+            duration: "30 days",
+            instructions: "Take in the morning",
+          },
+          {
+            medicine: "Paracetamol",
+            dose: "500mg",
+            frequency: "1× daily",
+            duration: "5 days",
+            instructions: "Only if fever",
+          },
+        ]),
+      },
+    });
+    seq++;
+  }
+  console.log(`✔ ${completed.length} consultations`);
+}
+
 async function main() {
   console.log("Seeding HMS database…");
 
@@ -320,6 +377,7 @@ async function main() {
   await seedMasterData();
   await seedPatients();
   await seedAppointments();
+  await seedConsultations();
 
   console.log("Seeding complete.");
 }

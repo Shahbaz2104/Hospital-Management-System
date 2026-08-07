@@ -41,11 +41,18 @@ import {
 import { apiGet, apiPost } from "@/lib/api";
 
 type DepartmentOption = { id: string; name: string; code: string };
+type BedPatient = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  patientNo: string;
+};
 type Bed = {
   id: string;
   number: string;
   status: string;
   patientId: string | null;
+  patient?: BedPatient | null;
 };
 type RoomRow = {
   id: string;
@@ -97,6 +104,11 @@ export function RoomsPage() {
         pageSize: 100,
       }),
   });
+
+  React.useEffect(() => {
+    const t = setInterval(() => refetch(), 15000);
+    return () => clearInterval(t);
+  }, [refetch]);
 
   const { data: departments } = useQuery({
     queryKey: ["departments", "options"],
@@ -425,11 +437,16 @@ export function RoomsPage() {
                   </span>
                 </div>
 
-                <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-2">
+                <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2">
                   {room.beds.map((bed) => (
                     <div
                       key={bed.id}
                       className="flex items-center gap-2 rounded-md bg-muted/40 px-3 py-2"
+                      title={
+                        bed.patient
+                          ? `${bed.patient.firstName} ${bed.patient.lastName} · ${bed.patient.patientNo}`
+                          : undefined
+                      }
                     >
                       <span
                         className={
@@ -441,9 +458,15 @@ export function RoomsPage() {
                         <p className="truncate text-sm font-medium">
                           {bed.number.replace(/^.*-/, "Bed ")}
                         </p>
-                        <p className="text-[11px] capitalize text-muted-foreground">
-                          {bed.status.toLowerCase()}
-                        </p>
+                        {bed.patient ? (
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            {bed.patient.firstName} {bed.patient.lastName}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] capitalize text-muted-foreground">
+                            {bed.status.toLowerCase()}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}

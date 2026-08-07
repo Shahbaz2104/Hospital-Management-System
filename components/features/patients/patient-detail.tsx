@@ -84,6 +84,20 @@ type PatientDetail = {
   appointments: AppointmentRow[];
 };
 
+type ConsultationRow = {
+  id: string;
+  consultationNo: string;
+  diagnosis: string | null;
+  notes: string | null;
+  followUpDate: string | null;
+  vitals: string | null;
+  prescriptions: string | null;
+  createdAt: string;
+  doctor: {
+    user: { firstName: string; lastName: string; title: string | null };
+  } | null;
+};
+
 const editSchema = z.object({
   firstName: z.string().trim().min(2, "First name is required"),
   lastName: z.string().trim().min(2, "Last name is required"),
@@ -135,6 +149,15 @@ export function PatientDetail() {
   const { data: patient, isLoading, refetch } = useQuery({
     queryKey: ["patient", params.id],
     queryFn: () => apiGet<PatientDetail>(`/patients/${params.id}`),
+    enabled: !!params.id,
+  });
+
+  const { data: consultations } = useQuery({
+    queryKey: ["consultations", params.id],
+    queryFn: () =>
+      apiGet<{ items: ConsultationRow[] }>("/consultations", {
+        patientId: params.id,
+      }),
     enabled: !!params.id,
   });
 
@@ -324,6 +347,71 @@ export function PatientDetail() {
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
+          <div className="rounded-lg border bg-card p-5">
+            <h2 className="mb-2 text-sm font-semibold">Consultations</h2>
+            {(consultations?.items.length ?? 0) === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                No consultations recorded yet.
+              </p>
+            ) : (
+              <div className="divide-y">
+                {consultations?.items.map((c) => {
+                  const vitals = c.vitals
+                    ? (JSON.parse(c.vitals) as { name: string; value: string; unit?: string }[])
+                    : [];
+                  const rx = c.prescriptions
+                    ? (JSON.parse(
+                        c.prescriptions
+                      ) as { medicine: string; dose?: string; frequency?: string; duration?: string }[])
+                    : [];
+                  return (
+                    <div key={c.id} className="py-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <p className="font-mono text-xs font-semibold text-primary">
+                          {c.consultationNo}
+                        </p>
+                        <p className="text-sm font-medium">{c.diagnosis ?? "Consultation"}</p>
+                        <p className="ml-auto text-xs text-muted-foreground">
+                          {format(new Date(c.createdAt), "MMM d, yyyy HH:mm")}
+                          {c.doctor
+                            ? ` · ${c.doctor.user.title ? c.doctor.user.title + " " : ""}${c.doctor.user.firstName} ${c.doctor.user.lastName}`
+                            : ""}
+                        </p>
+                      </div>
+                      {vitals.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {vitals.map((v) => (
+                            <Badge key={v.name} variant="outline" className="font-mono text-[11px]">
+                              {v.name} {v.value}
+                              {v.unit ? ` ${v.unit}` : ""}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      {rx.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {rx.map((r, i) => (
+                            <p key={i} className="text-xs text-muted-foreground">
+                              <span className="font-medium text-foreground">{r.medicine}</span>
+                              {r.dose ? ` · ${r.dose}` : ""}
+                              {r.frequency ? ` · ${r.frequency}` : ""}
+                              {r.duration ? ` · ${r.duration}` : ""}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                      {c.followUpDate && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Follow-up: {format(new Date(c.followUpDate), "MMM d, yyyy")}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           <div className="rounded-lg border bg-card p-5">
             <h2 className="mb-2 text-sm font-semibold">Appointment history</h2>
             {patient.appointments.length === 0 ? (
