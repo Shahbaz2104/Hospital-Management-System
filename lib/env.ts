@@ -1,9 +1,10 @@
+import { createHash } from "crypto";
 import { z } from "zod";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL (or MONGODB_URI) is required"),
-  JWT_ACCESS_SECRET: z.string().min(16),
-  JWT_REFRESH_SECRET: z.string().min(16),
+  JWT_ACCESS_SECRET: z.string().min(16).optional(),
+  JWT_REFRESH_SECRET: z.string().min(16).optional(),
   JWT_ACCESS_EXPIRES_IN: z.coerce.number().default(900),
   JWT_REFRESH_EXPIRES_IN: z.coerce.number().default(604800),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
@@ -29,11 +30,13 @@ if (!process.env.DATABASE_URL && process.env.MONGODB_URI) {
 // Prisma (MongoDB) requires a database name in the connection string.
 // Normalize e.g. "mongodb.net/?retryWrites=..." → "...mongodb.net/hospital_management?retryWrites=..."
 const rawUrl = process.env.DATABASE_URL;
-if (rawUrl && !/mongodb(\+srv)?:\/\/.*\/[^/?]+/.test(rawUrl)) {
-  const [base, query] = rawUrl.split("?");
-  process.env.DATABASE_URL = `${base.replace(/\/+$/, "")}/hospital_management${
-    query ? `?${query}` : ""
-  }`;
+if (rawUrl) {
+  if (!/mongodb(\+srv)?:\/\/.*\/[^/?]+/.test(rawUrl)) {
+    const [base, query] = rawUrl.split("?");
+    process.env.DATABASE_URL = `${base.replace(/\/+$/, "")}/hospital_management${
+      query ? `?${query}` : ""
+    }`;
+  }
 }
 
 /**
@@ -44,12 +47,37 @@ const isBuildPhase =
   process.env.NEXT_PHASE === "phase-production-build" ||
   process.env.NEXT_PHASE === "phase-development-build";
 
+// Derive stable JWT secrets from the DB connection string when they are not
+// provided. Deterministic, so issued sessions remain valid across serverless
+// cold starts and redeploys. Explicit secrets always take precedence.
+function derivedSecret(salt: string): string {
+  return createHash("sha256")
+    .update(`${salt}:${process.env.DATABASE_URL ?? ""}:hms-secret`)
+    .digest("base64")
+    .replace(/[^a-zA-Z0-9]/g, "");
+}
+
+if (!process.env.JWT_ACCESS_SECRET || process.env.JWT_ACCESS_SECRET.length < 16) {
+  process.env.JWT_ACCESS_SECRET = derivedSecret("access");
+}
+if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET.length < 16) {
+  process.env.JWT_REFRESH_SECRET = derivedSecret("refresh");
+}
+
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
   if (isBuildPhase) {
     console.warn(
-      "⚠ Env vars not set during build — using placeholders (runtime will fail fast if unset)."
+      "⚠ Env vars not fully set during build — using placeholders (runtime will handle real env)."
+    );
+  } else if (!process.env.DATABASE_URL) {
+    console.error(
+      "❌ Missing DATABASE_URL (or MONGODB_URI). Hint: in Vercel → Settings → Environment Variables, " +
+        "set MONGODB_URI to your MongoDB Atlas connection string, then Redeploy."
+    );
+    throw new Error(
+      "Missing DATABASE_URL/MONGODB_URI — add it in Vercel settings and redeploy."
     );
   } else {
     console.error(
@@ -66,6 +94,14 @@ const buildFallback = {
   JWT_REFRESH_SECRET: "build-placeholder-refresh-secret",
 };
 
-export const env = parsed.success
-  ? parsed.data
-  : envSchema.parse({ ...buildFallback, ...process.env });
+let envData: z.infer<typeof envSchema>;
+
+if (parsed.success) {
+  envData = parsed.data;
+} else if (isBuildPhase) {
+  envData = envSchema.parse({ ...buildFallback, ...process.env });
+} else {
+  envData = envSchema.parse(process.env);
+}
+
+export const env = envData;
