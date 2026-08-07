@@ -18,6 +18,12 @@ function permissionMeta(key: PermissionKey) {
 }
 
 async function seedPermissions() {
+  await prisma.permission.upsert({
+    where: { key: "*" },
+    update: { label: "Full Access", module: "system" },
+    create: { key: "*", label: "Full Access", module: "system" },
+  });
+
   for (const key of ALL_PERMISSIONS) {
     const { module, label } = permissionMeta(key);
     await prisma.permission.upsert({
@@ -26,7 +32,7 @@ async function seedPermissions() {
       create: { key, label, module },
     });
   }
-  console.log(`✔ ${ALL_PERMISSIONS.length} permissions`);
+  console.log(`✔ ${ALL_PERMISSIONS.length + 1} permissions (incl. wildcard)`);
 }
 
 async function seedRoles() {
@@ -50,13 +56,18 @@ async function seedRoles() {
     });
 
     await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
-    if (name === "SUPER_ADMIN") continue; // wildcard — no rows needed
+
+    const wildcard = name === "SUPER_ADMIN"
+      ? await prisma.permission.findUnique({ where: { key: "*" } })
+      : null;
 
     await prisma.rolePermission.createMany({
-      data: permissionRows.map((p) => ({
-        roleId: role.id,
-        permissionId: p.id,
-      })),
+      data: wildcard
+        ? [{ roleId: role.id, permissionId: wildcard.id }]
+        : permissionRows.map((p) => ({
+            roleId: role.id,
+            permissionId: p.id,
+          })),
     });
   }
   console.log(`✔ ${roleKeys.length} roles`);

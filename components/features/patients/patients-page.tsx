@@ -160,7 +160,7 @@ export function PatientsPage() {
               <p className="font-medium">
                 {p.firstName} {p.lastName}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-mono text-muted-foreground">
                 {p.patientNo}
                 {age !== null && <span> · {age} yrs</span>}
               </p>

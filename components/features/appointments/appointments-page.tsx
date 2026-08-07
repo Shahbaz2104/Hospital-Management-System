@@ -399,7 +399,7 @@ export function AppointmentsPage() {
                 className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border bg-card p-4"
               >
                 <div className="w-14 text-center">
-                  <p className="text-lg font-semibold tabular-nums leading-none">
+                  <p className="text-lg font-semibold font-mono tabular-nums leading-none">
                     {a.startTime}
                   </p>
                   <p className="mt-1 text-[11px] text-muted-foreground">

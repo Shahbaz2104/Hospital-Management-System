@@ -1,13 +1,12 @@
 "use client";
 
-import { Bell, LifeBuoy, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 import type { SessionUser } from "@/lib/auth/session";
 
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function Topbar({ user }: { user: SessionUser }) {
@@ -23,18 +22,6 @@ export function Topbar({ user }: { user: SessionUser }) {
         />
       </div>
       <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="icon" aria-label="Help">
-          <LifeBuoy className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative"
-          aria-label="Notifications"
-        >
-          <Bell className="size-4" />
-          <span className="absolute right-2 top-2 size-2 rounded-full bg-destructive" />
-        </Button>
         <ThemeToggle />
         <UserMenu user={user} />
       </div>

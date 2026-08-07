@@ -60,7 +60,7 @@ model User {
   doctor        Doctor?
   nurse         Nurse?
   employee      Employee?
-  patient       Patient?
+  patient       Patient[]
 
   @@index([roleId])
 }
@@ -72,7 +72,7 @@ model User {
 model Patient {
   id                 String   @id @default(auto()) @map("_id") @db.ObjectId
   patientNo          String   @unique // auto-generated e.g. PT-0001
-  userId             String?  @unique @db.ObjectId
+  userId             String?  @db.ObjectId
   user               User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   firstName          String
   lastName           String
@@ -137,7 +137,7 @@ model Department {
   name        String   @unique
   code        String   @unique
   description String?
-  headDoctorId String?  @unique @db.ObjectId
+  headDoctorId String? @db.ObjectId
   headDoctor  Doctor?  @relation("DepartmentHead", fields: [headDoctorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   hospitalId  String?
   createdAt   DateTime @default(now())
@@ -156,7 +156,7 @@ model Doctor {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   departmentId    String?  @db.ObjectId
   department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  headOf          Department? @relation("DepartmentHead")
+  headOf          Department[] @relation("DepartmentHead")
   specialization  String?
   qualification   String?
   experienceYears Int      @default(0)
