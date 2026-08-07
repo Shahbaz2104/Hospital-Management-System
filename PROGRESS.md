@@ -200,8 +200,40 @@
 | D14 | Insurance coverage as an invoice-level amount (covered by policy) | Bill shows patient share vs insurer share; claim ties to invoice |
 | D15 | Claim APPROVED auto-records an INSURANCE payment | Keeps AR correct without double entry |
 | D16 | Money always formatted `$X.XX` via shared `money()` helper | Consistent presentation + avoids float display bugs |
+| D17 | Standalone `Prescription` model + page (PDF + QR) | User choice — spec's Prescription Module |
+| D18 | Notifications: in-app + best-effort SMTP email | No-op/log when SMTP env unset |
+| D19 | Backup via `npm run db:backup` (mongodump); single-hospital branding via Settings | User choice; schema already multi-tenant-ready |
+| D20 | Minimal PWA (manifest + service worker, offline shell) | User choice — no full offline data sync |
+| D21 | Full spec-scale seed data | User choice — slower seeding, realistic demo |
 
 > New decisions appended as the build proceeds.
+
+---
+
+## Remaining Work Plan (approved 2026-08-08)
+
+Build order; each phase: schema → validate/generate → validators → services → API → UI → gates (typecheck/lint/build) → browser check → commit → PROGRESS.md update.
+
+1. **Phase 6b — Insurance UI** — `/insurance` page (Companies / Policies / Claims tabs; approve/reject → auto-pays invoice). Reuses existing `app/api/billing/*`.
+2. **Phase 7 — HR & Payroll** — extend `Employee`; new `Attendance`, `Leave`, `Payroll` (+ optional `PerformanceReview`) models; `/hr` (Employees / Attendance / Leaves tabs), `/staff` (roster), `/payroll` (runs, generate-for-month, mark paid, payslip PDF via pdf-lib).
+3. **Phase 8 — Reports, Analytics, Notifications** — `/reports` tabs (patients, revenue, doctors, appointments, medicines, inventory, admissions) with date filters + PDF/Excel/print; `/analytics` (revenue, growth, doctor perf, bed utilization, medicine usage, occupancy); new `Notification` model + topbar bell (wired) + `/notifications`; auto-notify on low stock/expiry/appointment/emergency; best-effort SMTP email (no-op if unset).
+4. **Phase 9 — Emergency, Settings, Records, Prescriptions, Search** — new `EmergencyCase` + `/emergency` (triage queue, ambulance, doctors, timeline); `/settings` (hospital info, logo, hours, appointment duration, tax, currency, SMTP/Cloudinary); new `MedicalRecord` + `/records`; **standalone `Prescription` model** + `/prescriptions` (PDF + QR verification); global search + appointments/departments.
+5. **Phase 10 — Polish** — Cloudinary uploads (logo, patient image, report files); minimal PWA (`manifest.ts` + SW); `/`-shortcut + a11y/perf pass; **full spec-scale seed** (150 patients, 30 doctors, 20 nurses, 10 depts, 100 medicines, 500 appointments, 200 invoices, 100 admissions, 50 lab reports); `npm run db:backup` (mongodump); final gates + browser verification + README/PROGRESS final update.
+
+**Decisions:** D17 standalone Prescription model (user); D18 in-app + best-effort email (user); D19 backup script + single hospital branding (user); D20 minimal PWA (user); D21 full spec-scale seed (user).
+
+### Session 7 — Phase 6b: Insurance page UI
+
+**2026-08-08**
+
+37. **`components/features/billing/insurance-page.tsx`** — three-tab insurance module:
+    - **Companies** — table (code, coverage %, phone/email, active badge) + create/edit dialogs (zod `insuranceCompanySchema`, coverage auto-default 80%, toggles `active`).
+    - **Policies** — table (policy number, patient, company, coverage %, validity window, status) + create dialog (patient + active-company selects; selecting a company auto-fills its coverage %; policy number optional → auto-generated `POL-XXXX`).
+    - **Claims** — stat cards (submitted / approved payouts / rejected) + table with Approve/Reject buttons → `decideClaim` (approval auto-records an INSURANCE payment and marks the claim PAID).
+    - Wrapper `app/(dashboard)/insurance/page.tsx` with `requirePermission("insurance:read")`.
+38. **Typing fix** — `z.coerce.date()` on optional policy dates fought RHF's resolver typing (input `unknown` vs output `Date`). Changed `validFrom/validTo` in `insurancePolicySchema` to plain optional strings (Prisma accepts ISO strings for DateTime) — RHF stays fully string-typed.
+39. **Gates** — typecheck clean; lint 0 errors (2 pre-existing warnings in `scripts/`); build succeeds. **Phase 6 is now complete** (billing + payments + insurance).
+40. **Uncommitted** — insurance page + validator change + PROGRESS.md; commit follows. Remaining: Phases 7–10 (see Remaining Work Plan above).
 
 ---
 

@@ -70,8 +70,8 @@ export const insurancePolicySchema = z.object({
   companyId: z.string().min(1, "Insurance company is required"),
   policyNumber: z.string().trim().min(2, "Policy number is required").optional(),
   coveragePercent: z.coerce.number().min(0).max(100).default(80),
-  validFrom: z.coerce.date().optional(),
-  validTo: z.coerce.date().optional(),
+  validFrom: z.string().trim().optional(),
+  validTo: z.string().trim().optional(),
   notes: z.string().trim().optional(),
 });
 
