@@ -330,3 +330,10 @@ Build order; each phase: schema → validate/generate → validators → service
 - [x] Root layout, sidebar shell, topbar, theme toggle, toasts
 - [x] Motion kit (Reveal / Stagger / Magnetic / AnimatedText) wired into dashboard
 - [x] Gate: typecheck + lint + build + dev boot
+
+---
+
+## Bug Hunt & Documentation
+
+- **Bug hunt** — full read-through of the codebase (all API routes, services, validators, feature components, schema, seed, auth, middleware) completed. Consolidated report with severities saved to **`BUGS.md`**.
+- **Status** — 33 findings: 10 P0 (security/data-integrity), 16 P1 (functional), 7 P2 (cleanup). Fix plan in batches: P0 → P1 → verify (typecheck/lint/build + browser smoke test) → P2, each batch committed + pushed.
