@@ -85,9 +85,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // ---- Auth pages: signed-in users go straight to the dashboard.
+  // ---- Auth pages: only auto-redirect when the access token is still valid.
+  // (A stale refresh cookie must not redirect, or we loop /login -> /dashboard
+  // forever since the layout can't resolve the session.)
   if (isPublic) {
-    if (payload || refreshToken) {
+    if (payload) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
       url.search = "";
