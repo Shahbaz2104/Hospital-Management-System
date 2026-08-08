@@ -21,7 +21,7 @@
 | 5 | Pharmacy & Inventory | DONE (medicines, dispensing, purchase orders, stock ledger, equipment, suppliers) |
 | 6 | Billing, Payments, Insurance | DONE |
 | 7 | HR & Payroll | DONE (employees, attendance, leaves, reviews, payroll runs + payslip PDF, staff roster) |
-| 8 | Reports, Analytics, Notifications | PENDING |
+| 8 | Reports, Analytics, Notifications | DONE (7 report types + PDF/Excel/print, analytics charts, Notification model + bell + page, lazy alerts + SMTP email) |
 | 9 | Emergency, Global Search, Settings | PENDING |
 | 10 | Polish: PWA, a11y, perf, seed, final gates | PENDING |
 
@@ -256,6 +256,29 @@ Build order; each phase: schema → validate/generate → validators → service
 47. **Gates** — typecheck clean; lint 0 errors (2 pre-existing warnings in `scripts/`); build succeeds (`/hr`, `/staff`, `/payroll` compiled).
 48. **Browser verification — BLOCKED** this session: `scripts/ui-verify-hr.ts` (in-memory mongo) hung at `prisma db push`; `scripts/ui-verify-hr-live.ts` (`next start` on the real Atlas DB) never came up. Both scripts kept in `scripts/` for a later session. Live seed against Atlas verified the data layer end-to-end (6 employees, 180 attendance, 2 leaves, 6 payrolls).
 49. **Uncommitted** — Phase 7 + seed + PROGRESS.md; commit follows. Remaining: Phases 8–10 (see Remaining Work Plan above).
+
+### Session 9 — Phase 8: Reports, Analytics, Notifications
+
+**2026-08-08**
+
+50. **Schema** — new `Notification` model (userId, title, message, type: SYSTEM/STOCK_ALERT/EXPIRY_ALERT/APPOINTMENT/EMERGENCY/BILLING/HR, entity/entityId, read/readAt, hospitalId, createdAt); `User.notifications` back-relation. Validated + client regenerated.
+51. **`validators/notifications.ts`** — `markNotificationReadSchema` ({ read: true }).
+52. **`services/notifications.ts`**:
+    - `notify()` — targets by userId or role list (optionally + hospitalId), **dedupes per entity** via unread-`entity`/`entityId` lookup, optional best-effort `sendEmail` (SMTP configured in this `.env`, so emails fire for real).
+    - `listNotifications` (unread-only filter + pagination), `unreadCount`, `markRead`, `markAllRead` (ownership-scoped to the actor).
+    - `runAlerts()` — lazy alert pipeline: low stock (`stock ≤ reorderLevel`), medicines expiring within 30 days (both → PHARMACIST/HOSPITAL_ADMIN/SUPER_ADMIN), today's CONFIRMED appointments → their doctor (in-app + email reminder). Returns counts of what was checked.
+53. **`services/reports.ts`** — `ReportResult` shape (type/title/columns/rows/summary) shared by UI + exporters; `runReport(type, {from,to})` with 7 types: patients (new/gender/age/OPD-vs-admitted), revenue (billed/collected/outstanding per method), doctors (appointments/consultations/revenue), appointments (status/type/month splits), medicines (units/revenue/stock/reorder), inventory (equipment status/category/maintenance next), admissions (avg stay/occupancy). Exporters: `exportReportPdf` (pdf-lib, header + summary + paginated table, right-aligned numerics) and `exportReportExcel` (exceljs, styled header/summary/table with auto column widths).
+54. **`services/analytics.ts`** — `analyticsOverview()`: monthly revenue/patients/appointments (6 mo), growth %, payment-method split, doctor performance (top 8), bed status + 14-day occupancy trend (admission overlaps per day), medicine usage (30 d), appointment status split.
+55. **API** — `app/api/notifications` GET (runs `runAlerts()` lazily, lists; `unread=`, `page`, `pageSize`) + PATCH (mark all read); `notifications/[id]` PATCH (mark read); `notifications/unread` GET (bell polling); `app/api/reports` GET (validated type + range); `app/api/reports/export` GET (`pdf`|`excel`, binary attachment download); `app/api/analytics` GET. Middleware: added `/notifications` to ROUTE_ROLES (all staff); `/reports` + `/analytics` already present.
+56. **UI**:
+    - `components/layout/notification-bell.tsx` → topbar — unread badge polled every 30s, popover with latest 8 (icons per type, click-to-read, mark-all-read, "View all" → `/notifications`).
+    - `components/features/notifications/notifications-page.tsx` → `/notifications` — stat cards (unread/total/read), All|Unread tabs, per-item mark read, mark-all-read, type-styled icons, read timestamps.
+    - `components/features/reports/reports-page.tsx` → `/reports` — 7 type tabs, from/to date inputs, summary stat cards (+ extras), data-table, Print (new-window HTML), Excel + PDF export via blob download.
+    - `components/features/analytics/analytics-page.tsx` → `/analytics` — recharts (v3, matching dashboard styling): revenue area, patients/appointments bars, payment-method donut, doctor performance bars, bed-status donut, 14-day occupancy area, medicine usage bars, appointment-status bars.
+57. **Seed** — `seedNotifications()`: 5 idempotent demo notifications across admin/doctor/pharmacist/hospital accounts (SYSTEM, STOCK_ALERT, EXPIRY_ALERT, APPOINTMENT, HR) with staggered createdAt; re-ran full seed against Atlas.
+58. **Gates** — typecheck clean; lint 0 errors (2 pre-existing warnings in `scripts/` — untouched); build succeeds with `/reports`, `/analytics`, `/notifications` + 3 new API routes compiled.
+59. **Smoke test (live Atlas)** — analytics overview (5-month bucket zero-revenue month behavior OK), revenue report + PDF (1339 B) + Excel (6747 B) exports, runAlerts lazily created a real "Low stock: Ibuprofen" alert, list/unread/mark-all-read round-trip (5 → 0 unread). Browser verification still blocked by the same environment issue as Phase 7 (next start doesn't come up here).
+60. **Uncommitted** — Phase 8 + seed + PROGRESS.md; commit follows. Remaining: Phases 9–10 (see Remaining Work Plan above).
 
 ---
 

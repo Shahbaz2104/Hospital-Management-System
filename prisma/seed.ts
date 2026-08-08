@@ -594,6 +594,91 @@ async function seedHr() {
   console.log(`✔ ${employeeIds.length} payroll records for ${month}`);
 }
 
+async function seedNotifications() {
+  const hospital = await prisma.hospital.findFirst();
+  if (!hospital) return;
+  const hospitalId = hospital.id;
+
+  const targets = await prisma.user.findMany({
+    where: {
+      OR: [
+        { email: "hospital@hospital.com" },
+        { email: "admin@hospital.com" },
+        { email: "pharmacist@hospital.com" },
+        { email: "doctor@hospital.com" },
+      ],
+    },
+    select: { id: true, email: true },
+  });
+
+  const samples: Array<{
+    email: string;
+    title: string;
+    message: string;
+    type: string;
+    createdAt: Date;
+  }> = [
+    {
+      email: "hospital@hospital.com",
+      title: "Welcome to HMS",
+      message: "Your hospital workspace is ready. Explore patients, billing and reports.",
+      type: "SYSTEM",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26),
+    },
+    {
+      email: "admin@hospital.com",
+      title: "Low stock: Amoxicillin",
+      message: "Amoxicillin 500mg is below reorder level. Reorder to avoid shortages.",
+      type: "STOCK_ALERT",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6),
+    },
+    {
+      email: "pharmacist@hospital.com",
+      title: "Expiring: Paracetamol syrup",
+      message: "Paracetamol 120mg/5ml syrup expires within 30 days. Check inventory.",
+      type: "EXPIRY_ALERT",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3),
+    },
+    {
+      email: "doctor@hospital.com",
+      title: "Upcoming appointments",
+      message: "You have appointments scheduled today. View them from the dashboard.",
+      type: "APPOINTMENT",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 1),
+    },
+    {
+      email: "hospital@hospital.com",
+      title: "Payroll run completed",
+      message: "August payroll was generated for 6 employees. Review and mark as paid.",
+      type: "HR",
+      createdAt: new Date(Date.now() - 1000 * 60 * 30),
+    },
+  ];
+
+  let created = 0;
+  for (const sample of samples) {
+    const target = targets.find((t) => t.email === sample.email);
+    if (!target) continue;
+    const exists = await prisma.notification.findFirst({
+      where: { userId: target.id, title: sample.title },
+      select: { id: true },
+    });
+    if (exists) continue;
+    await prisma.notification.create({
+      data: {
+        userId: target.id,
+        title: sample.title,
+        message: sample.message,
+        type: sample.type,
+        hospitalId,
+        createdAt: sample.createdAt,
+      },
+    });
+    created++;
+  }
+  console.log(`✔ ${created} notifications`);
+}
+
 async function main() {
   console.log("Seeding HMS database…");
 
@@ -622,6 +707,7 @@ async function main() {
   await seedConsultations();
   await seedPharmacy();
   await seedHr();
+  await seedNotifications();
 
   console.log("Seeding complete.");
 }

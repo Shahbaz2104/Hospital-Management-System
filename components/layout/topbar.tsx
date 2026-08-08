@@ -4,6 +4,7 @@ import type { SessionUser } from "@/lib/auth/session";
 
 import { GlobalSearch } from "@/components/layout/global-search";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
@@ -13,6 +14,7 @@ export function Topbar({ user }: { user: SessionUser }) {
       <MobileNav user={user} />
       <GlobalSearch />
       <div className="ml-auto flex items-center gap-1">
+        <NotificationBell />
         <ThemeToggle />
         <UserMenu user={user} />
       </div>

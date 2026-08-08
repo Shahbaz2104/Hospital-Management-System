@@ -45,6 +45,7 @@ const ROUTE_ROLES: Record<string, RoleKey[]> = {
   "/prescriptions": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "PHARMACIST"],
   "/records": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR"],
   "/analytics": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "ACCOUNTANT"],
+  "/notifications": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PHARMACIST", "LAB_TECHNICIAN", "ACCOUNTANT"],
   "/settings": ["SUPER_ADMIN", "HOSPITAL_ADMIN"],
   "/audit-logs": ["SUPER_ADMIN", "HOSPITAL_ADMIN"],
   "/users": ["SUPER_ADMIN", "HOSPITAL_ADMIN"],

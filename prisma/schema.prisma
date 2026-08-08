@@ -69,6 +69,7 @@ model User {
   leavesApproved     Leave[]      @relation("LeaveApprovedBy")
   payrollPaid        Payroll[]    @relation("PayrollPaidBy")
   performanceReviews PerformanceReview[] @relation("PerformanceReviewedBy")
+  notifications      Notification[]
 
   @@index([roleId])
 }
@@ -853,4 +854,23 @@ model Settings {
   updatedAt  DateTime @updatedAt
 
   @@unique([hospitalId, key])
+}
+
+model Notification {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  message    String?
+  type       String   @default("SYSTEM") // SYSTEM | STOCK_ALERT | EXPIRY_ALERT | APPOINTMENT | EMERGENCY | BILLING | HR
+  entity     String? // e.g. Medicine, Appointment, Invoice
+  entityId   String?
+  read       Boolean  @default(false)
+  readAt     DateTime?
+  hospitalId String?  @db.ObjectId
+  createdAt  DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([type])
+  @@index([createdAt])
 }
