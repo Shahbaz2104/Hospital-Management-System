@@ -432,6 +432,168 @@ async function seedPharmacy() {
   console.log(`✔ ${EQUIPMENT_SEED.length} equipment`);
 }
 
+async function seedHr() {
+  const hospital = await prisma.hospital.findFirst();
+  const hospitalId = hospital?.id ?? undefined;
+
+  const depts = await prisma.department.findMany();
+  const dept = (code: string) => depts.find((d) => d.code === code)?.id ?? null;
+
+  const employeeSeed: {
+    email: string;
+    employeeNo: string;
+    designation: string;
+    deptCode: string;
+    salary: number;
+    allowances: number;
+    employmentType: string;
+    joiningDate: string;
+    status: string;
+  }[] = [
+    { email: "hospital@hospital.com", employeeNo: "EMP-0001", designation: "Hospital Administrator", deptCode: "GENMED", salary: 6200, allowances: 500, employmentType: "FULL_TIME", joiningDate: "2019-03-01", status: "ACTIVE" },
+    { email: "account@hospital.com", employeeNo: "EMP-0002", designation: "Senior Accountant", deptCode: "GENMED", salary: 4100, allowances: 300, employmentType: "FULL_TIME", joiningDate: "2020-07-15", status: "ACTIVE" },
+    { email: "pharmacist@hospital.com", employeeNo: "EMP-0003", designation: "Chief Pharmacist", deptCode: "GENMED", salary: 3800, allowances: 250, employmentType: "FULL_TIME", joiningDate: "2021-01-10", status: "ACTIVE" },
+    { email: "lab@hospital.com", employeeNo: "EMP-0004", designation: "Lab Technician", deptCode: "GENMED", salary: 2900, allowances: 200, employmentType: "FULL_TIME", joiningDate: "2022-04-05", status: "ACTIVE" },
+    { email: "reception@hospital.com", employeeNo: "EMP-0005", designation: "Front Desk Receptionist", deptCode: "GENMED", salary: 2400, allowances: 150, employmentType: "FULL_TIME", joiningDate: "2023-08-20", status: "ACTIVE" },
+    { email: "nurse@hospital.com", employeeNo: "EMP-0006", designation: "Head Nurse", deptCode: "PED", salary: 3500, allowances: 220, employmentType: "FULL_TIME", joiningDate: "2020-11-02", status: "ON_LEAVE" },
+  ];
+
+  const employeeIds: { id: string; employeeNo: string }[] = [];
+  for (const s of employeeSeed) {
+    const user = await prisma.user.findUnique({ where: { email: s.email } });
+    if (!user) continue;
+    const employee = await prisma.employee.upsert({
+      where: { employeeNo: s.employeeNo },
+      update: { status: s.status, salary: s.salary, allowances: s.allowances },
+      create: {
+        userId: user.id,
+        employeeNo: s.employeeNo,
+        departmentId: dept(s.deptCode),
+        designation: s.designation,
+        employmentType: s.employmentType,
+        joiningDate: new Date(s.joiningDate),
+        salary: s.salary,
+        allowances: s.allowances,
+        bankName: "First National Bank",
+        bankAccountNo: `0044-${s.employeeNo.slice(-4)}`,
+        bankIfsc: `FNBL000${s.employeeNo.slice(-1)}`,
+        status: s.status,
+        hospitalId,
+      },
+    });
+    employeeIds.push({ id: employee.id, employeeNo: s.employeeNo });
+  }
+  console.log(`✔ ${employeeIds.length} employees`);
+
+  const now = new Date();
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const month = ymd(now).slice(0, 7);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const rows: {
+    employeeId: string;
+    date: string;
+    status: string;
+    checkIn: string;
+    checkOut: string;
+    hoursWorked: number | null;
+    hospitalId?: string;
+  }[] = [];
+  for (const emp of employeeIds) {
+    for (let d = new Date(today.getTime()); d.getTime() <= today.getTime(); d.setDate(d.getDate() - 1)) {
+      if (rows.length >= 180) break;
+      const day = d.getDay();
+      if (day === 0 || day === 6) continue;
+      const dateStr = ymd(d);
+      const dayOfMonth = d.getDate();
+      let status = "PRESENT";
+      const checkIn = "09:00";
+      const checkOut = "17:00";
+      if (dayOfMonth === 3) status = "ABSENT";
+      if (dayOfMonth === 14) status = "HALF_DAY";
+      if (dayOfMonth === 21 && emp.employeeNo === "EMP-0006") status = "LEAVE";
+      rows.push({
+        employeeId: emp.id,
+        date: dateStr,
+        status,
+        checkIn,
+        checkOut,
+        hoursWorked: status === "PRESENT" ? 8 : status === "HALF_DAY" ? 4 : null,
+        hospitalId,
+      });
+    }
+  }
+  if (rows.length) {
+    await prisma.attendance.deleteMany({ where: { date: { startsWith: month } } });
+    await prisma.attendance.createMany({ data: rows });
+  }
+  console.log(`✔ ${rows.length} attendance records for ${month}`);
+
+  const adminUser = await prisma.user.findUnique({ where: { email: "hospital@hospital.com" } });
+  const emp1 = employeeIds[1]; // accountant
+  const emp5 = employeeIds[5]; // head nurse
+  if (emp1) {
+    await prisma.leave.upsert({
+      where: { leaveNo: "LV-0001" },
+      update: {},
+      create: {
+        leaveNo: "LV-0001",
+        employeeId: emp1.id,
+        type: "ANNUAL",
+        fromDate: new Date(now.getFullYear(), now.getMonth(), 18),
+        toDate: new Date(now.getFullYear(), now.getMonth(), 20),
+        days: 3,
+        reason: "Family event",
+        status: "PENDING",
+        hospitalId,
+      },
+    });
+  }
+  if (emp5 && adminUser) {
+    await prisma.leave.upsert({
+      where: { leaveNo: "LV-0002" },
+      update: {},
+      create: {
+        leaveNo: "LV-0002",
+        employeeId: emp5.id,
+        type: "SICK",
+        fromDate: new Date(now.getFullYear(), now.getMonth(), 10),
+        toDate: new Date(now.getFullYear(), now.getMonth(), 12),
+        days: 3,
+        reason: "Medical leave",
+        status: "APPROVED",
+        approverId: adminUser.id,
+        decidedAt: new Date(),
+        hospitalId,
+      },
+    });
+  }
+  console.log("✔ 2 leave requests");
+
+  for (const emp of employeeIds) {
+    const record = await prisma.employee.findUnique({ where: { id: emp.id } });
+    if (!record) continue;
+    const bonus = emp.employeeNo === "EMP-0001" ? 400 : 0;
+    const netPay = Math.round((record.salary + record.allowances + bonus) * 100) / 100;
+    await prisma.payroll.upsert({
+      where: { employeeId_month: { employeeId: emp.id, month } },
+      update: {},
+      create: {
+        employeeId: emp.id,
+        month,
+        basicSalary: record.salary,
+        allowances: record.allowances,
+        bonus,
+        netPay,
+        status: emp.employeeNo === "EMP-0001" ? "PAID" : "GENERATED",
+        paidAt: emp.employeeNo === "EMP-0001" ? new Date() : null,
+        hospitalId,
+      },
+    });
+  }
+  console.log(`✔ ${employeeIds.length} payroll records for ${month}`);
+}
+
 async function main() {
   console.log("Seeding HMS database…");
 
@@ -459,6 +621,7 @@ async function main() {
   await seedAppointments();
   await seedConsultations();
   await seedPharmacy();
+  await seedHr();
 
   console.log("Seeding complete.");
 }

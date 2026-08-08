@@ -19,8 +19,8 @@
 | 3 | Patients & Appointments (OPD/IPD) | DONE (incl. consultations, live bed dashboard) |
 | 4 | Laboratory & Radiology | DONE (orders, catalog, results, reports, printable output) |
 | 5 | Pharmacy & Inventory | DONE (medicines, dispensing, purchase orders, stock ledger, equipment, suppliers) |
-| 6 | Billing, Payments, Insurance | PARTIAL — Billing + Payments + insurance BACKEND done; Insurance UI pending |
-| 7 | HR & Payroll | PENDING |
+| 6 | Billing, Payments, Insurance | DONE |
+| 7 | HR & Payroll | DONE (employees, attendance, leaves, reviews, payroll runs + payslip PDF, staff roster) |
 | 8 | Reports, Analytics, Notifications | PENDING |
 | 9 | Emergency, Global Search, Settings | PENDING |
 | 10 | Polish: PWA, a11y, perf, seed, final gates | PENDING |
@@ -179,7 +179,9 @@
 - [x] Scroll fix — AppShell window-scroll layout, sticky sidebar/topbar, collapse state, Lenis root preserved
 - [x] Global search — patients/doctors/medicines/invoices popover in topbar
 - [x] Browser verification — login, scroll, collapse, search, /billing, /payments (Playwright)
-- [ ] Phase 6 (insurance UI) — companies/policies/claims management page (approve/reject)
+- [x] Phase 6 (insurance UI) — companies/policies/claims management page (approve/reject)
+- [x] Phase 7 — HR & Payroll: employees CRUD (w/ user+role creation), attendance (mark + monthly stats), leaves (approve/reject), performance reviews, payroll runs (generate / mark paid / payslip PDF), /staff roster
+- [ ] Browser verification of Phase 7 pages — blocked this session: `next start` did not come up within the verify scripts (in-memory mongo `prisma db push` hang + `next start` no-response in this environment); gates + live seed against Atlas passed instead
 
 | ID | Decision | Rationale |
 | -- | -------- | --------- |
@@ -234,6 +236,26 @@ Build order; each phase: schema → validate/generate → validators → service
 38. **Typing fix** — `z.coerce.date()` on optional policy dates fought RHF's resolver typing (input `unknown` vs output `Date`). Changed `validFrom/validTo` in `insurancePolicySchema` to plain optional strings (Prisma accepts ISO strings for DateTime) — RHF stays fully string-typed.
 39. **Gates** — typecheck clean; lint 0 errors (2 pre-existing warnings in `scripts/`); build succeeds. **Phase 6 is now complete** (billing + payments + insurance).
 40. **Uncommitted** — insurance page + validator change + PROGRESS.md; commit follows. Remaining: Phases 7–10 (see Remaining Work Plan above).
+
+### Session 8 — Phase 7: HR & Payroll
+
+**2026-08-08**
+
+41. **Schema** (`prisma/schema.prisma`, validated + client regenerated):
+    - `Employee` extended: `employmentType` (FULL_TIME/PART_TIME/CONTRACT/INTERN), `allowances`, `gender`, `birthDate`, `address`, `emergencyContact`, `bankName`, `bankAccountNo`, `bankIfsc`, `hospitalId`, back-relations.
+    - New models: `Attendance` (date as `YYYY-MM-DD` string, `@@unique([employeeId, date])`), `Leave` (`leaveNo` LV-XXXX, PENDING/APPROVED/REJECTED, approver), `Payroll` (`month` `YYYY-MM`, snapshots basic/allowances/bonus/overtime/deductions, `@@unique([employeeId, month])`, GENERATED/PAID), `PerformanceReview` (period, rating 1–5).
+    - User back-relations: `attendanceRecorded` / `leavesApproved` / `payrollPaid` / `performanceReviews`.
+42. **`validators/hr.ts`** — employee (create: password required; update: partial), attendanceMark (bulk entries), leave (+decision), payrollGenerate (month + per-employee overrides), payrollMarkPaid (ids), performanceReview.
+43. **`services/hr.ts`** — `nextNumber` EMP/LV; employees list/create (transaction: user + role + employee)/update/delete; attendance list/mark (upsert per employee+date)/stats (groupBy month); leaves list/create (auto day count)/decide; reviews list/create; payroll generate (all ACTIVE employees, snapshots, skips existing month)/list/stats/markPaid (bulk)/**payslip PDF via pdf-lib** (A4, hospital branding, earnings/deductions table, net pay, status). Audit: EMPLOYEE_CREATED/UPDATED/DELETED, ATTENDANCE_MARKED, LEAVE_CREATED/DECIDED, PAYROLL_GENERATED/PAID, PERFORMANCE_REVIEW_CREATED.
+44. **API** — `app/api/hr/*`: `employees` GET/POST + `[id]` GET/PATCH/DELETE, `attendance` GET/POST + `attendance/stats`, `leaves` GET/POST + `[id]` PATCH(decide), `reviews` GET/POST, `payroll` GET/POST(generate) + `payroll/stats` + `payroll/mark-paid` POST + `payroll/[id]/payslip` GET (application/pdf). All behind `requirePermission` (hr/payroll read/manage). Routes stay audit-free (services log).
+45. **UI**:
+    - `components/features/hr/hr-page.tsx` → `/hr` — stat cards (total/active/on-leave/pending leaves), 4 tabs: **Employees** (search, status filter, full create/edit dialog incl. role select + bank fields, delete), **Attendance** (quick mark: date/status/employee or "all employees" toggle + clock in/out, monthly summary per employee, records list), **Leaves** (status filter, create dialog, Approve/Reject), **Reviews** (star rating, create dialog).
+    - `components/features/hr/staff-page.tsx` → `/staff` — roster grid grouped by department (avatar, role, contact, join date, status badge).
+    - `components/features/hr/payroll-page.tsx` → `/payroll` — month picker, stat cards (net payout/paid/pending/slips), Generate for month, bulk checkbox + Mark paid, payslip PDF download, status tabs.
+46. **Seed** — `seedHr()`: 6 employees from existing demo users (upsert on employeeNo), 180 attendance records for the current month via batched `createMany` (deleteMany first — MongoDB has no `skipDuplicates`), 2 leaves (LV-0001 pending, LV-0002 approved), 6 payroll records for the current month (one PAID).
+47. **Gates** — typecheck clean; lint 0 errors (2 pre-existing warnings in `scripts/`); build succeeds (`/hr`, `/staff`, `/payroll` compiled).
+48. **Browser verification — BLOCKED** this session: `scripts/ui-verify-hr.ts` (in-memory mongo) hung at `prisma db push`; `scripts/ui-verify-hr-live.ts` (`next start` on the real Atlas DB) never came up. Both scripts kept in `scripts/` for a later session. Live seed against Atlas verified the data layer end-to-end (6 employees, 180 attendance, 2 leaves, 6 payrolls).
+49. **Uncommitted** — Phase 7 + seed + PROGRESS.md; commit follows. Remaining: Phases 8–10 (see Remaining Work Plan above).
 
 ---
 

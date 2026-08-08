@@ -65,6 +65,10 @@ model User {
   receivedPayments Payment[]
   submittedClaims  InsuranceClaim[] @relation("ClaimSubmittedBy")
   decidedClaims    InsuranceClaim[] @relation("ClaimDecidedBy")
+  attendanceRecorded Attendance[] @relation("AttendanceRecordedBy")
+  leavesApproved     Leave[]      @relation("LeaveApprovedBy")
+  payrollPaid        Payroll[]    @relation("PayrollPaidBy")
+  performanceReviews PerformanceReview[] @relation("PerformanceReviewedBy")
 
   @@index([roleId])
 }
@@ -302,18 +306,122 @@ model Nurse {
 }
 
 model Employee {
-  id           String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String      @unique @db.ObjectId
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  departmentId String?     @db.ObjectId
-  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  employeeNo   String?     @unique
-  designation  String?
-  joiningDate  DateTime?
-  salary       Float       @default(0)
-  status       String      @default("ACTIVE")
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String      @unique @db.ObjectId
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId     String?     @db.ObjectId
+  department       Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  employeeNo       String      @unique // e.g. EMP-0001
+  designation      String?
+  employmentType   String      @default("FULL_TIME") // FULL_TIME | PART_TIME | CONTRACT | INTERN
+  joiningDate      DateTime?
+  salary           Float       @default(0) // monthly basic
+  allowances       Float       @default(0) // monthly fixed allowances
+  gender           String? // MALE | FEMALE | OTHER
+  birthDate        DateTime?
+  address          String?
+  emergencyContact String?
+  bankName         String?
+  bankAccountNo    String?
+  bankIfsc         String?
+  status           String      @default("ACTIVE") // ACTIVE | INACTIVE | ON_LEAVE | TERMINATED
+  hospitalId       String?     @db.ObjectId
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  attendance Attendance[]
+  leaves     Leave[]
+  payrolls   Payroll[]
+  reviews    PerformanceReview[]
+
+  @@index([status])
+  @@index([departmentId])
+}
+
+model Attendance {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId   String   @db.ObjectId
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date         String // YYYY-MM-DD (one record per employee per day)
+  status       String   @default("PRESENT") // PRESENT | ABSENT | HALF_DAY | LEAVE
+  checkIn      String? // HH:mm
+  checkOut     String? // HH:mm
+  hoursWorked  Float?
+  notes        String?
+  recordedById String?  @db.ObjectId
+  recordedBy   User?    @relation("AttendanceRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  hospitalId   String?  @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([date])
+}
+
+model Leave {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  leaveNo    String    @unique // e.g. LV-0001
+  employeeId String    @db.ObjectId
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type       String    @default("CASUAL") // CASUAL | SICK | ANNUAL | UNPAID | MATERNITY | PATERNITY | OTHER
+  fromDate   DateTime
+  toDate     DateTime
+  days       Float     @default(1)
+  reason     String?
+  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  approverId String?   @db.ObjectId
+  approver   User?     @relation("LeaveApprovedBy", fields: [approverId], references: [id], onDelete: SetNull)
+  decidedAt  DateTime?
+  notes      String?
+  hospitalId String?   @db.ObjectId
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+model Payroll {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId  String    @db.ObjectId
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  month       String // YYYY-MM
+  basicSalary Float     @default(0) // snapshot at generation
+  allowances  Float     @default(0)
+  bonus       Float     @default(0)
+  overtime    Float     @default(0)
+  deductions  Float     @default(0)
+  netPay      Float     @default(0) // basic + allowances + bonus + overtime - deductions
+  status      String    @default("GENERATED") // GENERATED | PAID
+  paidAt      DateTime?
+  paidById    String?   @db.ObjectId
+  paidBy      User?     @relation("PayrollPaidBy", fields: [paidById], references: [id], onDelete: SetNull)
+  notes       String?
+  hospitalId  String?   @db.ObjectId
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([employeeId, month])
+  @@index([month])
+  @@index([status])
+}
+
+model PerformanceReview {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId    String    @db.ObjectId
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  period        String // e.g. 2026-Q3
+  rating        Int       @default(3) // 1-5
+  strengths     String?
+  improvements  String?
+  goals         String?
+  reviewerId    String?   @db.ObjectId
+  reviewer      User?     @relation("PerformanceReviewedBy", fields: [reviewerId], references: [id], onDelete: SetNull)
+  hospitalId    String?   @db.ObjectId
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([employeeId])
 }
 
 model Room {
