@@ -54,7 +54,7 @@ export const navConfig: NavSection[] = [
       { title: "Patients", href: "/patients", icon: HeartPulse, permission: "patients:read" },
       { title: "Appointments", href: "/appointments", icon: CalendarClock, permission: "appointments:read" },
       { title: "Doctors", href: "/doctors", icon: Stethoscope, permission: "doctors:read" },
-      { title: "Departments", href: "/departments", icon: Building2 },
+      { title: "Departments", href: "/departments", icon: Building2, permission: "departments:read" },
       { title: "Rooms & Beds", href: "/rooms", icon: BedDouble, permission: "rooms:read" },
       { title: "Admissions", href: "/admissions", icon: ClipboardList, permission: "admissions:read" },
       { title: "Discharges", href: "/discharges", icon: RotateCcw, permission: "discharges:read" },
@@ -96,7 +96,6 @@ export const navConfig: NavSection[] = [
   {
     title: "Operations",
     items: [
-      { title: "Reception", href: "/reception", icon: Phone, permission: "patients:create" },
       { title: "Reports", href: "/reports", icon: FileBarChart, permission: "reports:read" },
       { title: "Prescriptions", href: "/prescriptions", icon: FileText, permission: "prescriptions:read" },
       { title: "Medical Records", href: "/records", icon: FolderOpen, permission: "records:read" },

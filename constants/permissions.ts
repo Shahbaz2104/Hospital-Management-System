@@ -249,6 +249,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     "profile:read",
     "appointments:read",
     "appointments:create",
+    "doctors:read",
     "notifications:read",
   ],
 };
