@@ -679,6 +679,180 @@ async function seedNotifications() {
   console.log(`✔ ${created} notifications`);
 }
 
+async function seedPhase9() {
+  const hospital = await prisma.hospital.findFirst();
+  if (!hospital) return;
+  const hospitalId = hospital.id;
+
+  const patients = await prisma.patient.findMany({ orderBy: { createdAt: "asc" }, take: 3 });
+  const doctor = await prisma.doctor.findFirst({ include: { user: true } });
+  const admin = await prisma.user.findUnique({ where: { email: "hospital@hospital.com" } });
+  if (!patients.length || !doctor || !admin) return;
+
+  // Emergency cases
+  const existingCases = await prisma.emergencyCase.count();
+  if (existingCases === 0) {
+    const samples = [
+      {
+        caseNo: "ER-0001",
+        patientId: patients[0]?.id ?? null,
+        walkInName: patients[0] ? null : "Unknown male",
+        walkInPhone: "+1 555 014 2211",
+        age: 34,
+        gender: "MALE",
+        triageLevel: "RED",
+        condition: "Chest pain, suspected cardiac event",
+        vitals: JSON.stringify({ bp: "180/110", pulse: "112", temp: "37.1", spo2: "94", rr: "22" }),
+        status: "IN_PROGRESS",
+        ambulanceRequested: true,
+        ambulanceDispatchedAt: new Date(Date.now() - 1000 * 60 * 42),
+        ambulanceEtaMinutes: 8,
+        ambulanceNotes: "Unit 2 dispatched from East depot.",
+        createdAt: new Date(Date.now() - 1000 * 60 * 50),
+      },
+      {
+        caseNo: "ER-0002",
+        patientId: patients[1]?.id ?? null,
+        walkInName: null,
+        walkInPhone: null,
+        age: 28,
+        gender: "FEMALE",
+        triageLevel: "ORANGE",
+        condition: "Road traffic accident, possible fracture",
+        vitals: JSON.stringify({ bp: "120/80", pulse: "98", temp: "36.8", spo2: "97", rr: "18" }),
+        status: "WAITING",
+        ambulanceRequested: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 18),
+      },
+      {
+        caseNo: "ER-0003",
+        patientId: null,
+        walkInName: "Arjun Nair",
+        walkInPhone: "+1 555 014 9988",
+        age: 52,
+        gender: "MALE",
+        triageLevel: "YELLOW",
+        condition: "Severe abdominal pain",
+        vitals: JSON.stringify({ bp: "135/85", pulse: "88", temp: "37.4", spo2: "98", rr: "16" }),
+        status: "STABILIZED",
+        ambulanceRequested: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3),
+      },
+    ];
+
+    for (const s of samples) {
+      const created = await prisma.emergencyCase.create({
+        data: {
+          ...s,
+          assignedDoctorId: doctor.id,
+          createdById: admin.id,
+          hospitalId,
+        },
+      });
+      await prisma.emergencyEvent.create({
+        data: {
+          caseId: created.id,
+          type: "NOTE",
+          note: `Case opened. Triage: ${s.triageLevel}.`,
+          createdById: admin.id,
+          createdAt: s.createdAt,
+        },
+      });
+      if (s.ambulanceDispatchedAt) {
+        await prisma.emergencyEvent.create({
+          data: {
+            caseId: created.id,
+            type: "AMBULANCE",
+            note: `Ambulance dispatched, ETA ${s.ambulanceEtaMinutes} min — ${s.ambulanceNotes}.`,
+            createdById: admin.id,
+            createdAt: s.ambulanceDispatchedAt,
+          },
+        });
+      }
+    }
+    console.log("✔ 3 emergency cases");
+  } else {
+    console.log("✔ emergency cases (already present)");
+  }
+
+  // Medical records
+  const recordsExist = await prisma.medicalRecord.count();
+  if (recordsExist === 0) {
+    const records = [
+      { patientId: patients[0]!.id, type: "DIAGNOSIS", title: "Hypertension diagnosed", summary: "Stage 2 hypertension. Started on Amlodipine 5mg. Lifestyle counseling given.", daysAgo: 20 },
+      { patientId: patients[0]!.id, type: "LAB", title: "CBC — full blood count", summary: "Hemoglobin 13.2 g/dL, WBC 6.4, platelets 240k. Within normal limits.", daysAgo: 12 },
+      { patientId: patients[1]!.id, type: "PRESCRIPTION", title: "Antibiotic course", summary: "Amoxicillin 500mg TDS for 7 days for respiratory infection.", daysAgo: 6 },
+      { patientId: patients[1]!.id, type: "RADIOLOGY", title: "Chest X-ray PA view", summary: "No acute cardiopulmonary abnormality. Heart size normal.", daysAgo: 3 },
+    ];
+    for (const r of records) {
+      const no = await prisma.medicalRecord.count();
+      await prisma.medicalRecord.create({
+        data: {
+          recordNo: `MR-${String(no + 1).padStart(4, "0")}`,
+          patientId: r.patientId,
+          type: r.type,
+          title: r.title,
+          summary: r.summary,
+          doctorId: doctor.id,
+          hospitalId,
+          createdAt: new Date(Date.now() - r.daysAgo * 86400_000),
+        },
+      });
+    }
+    console.log("✔ 4 medical records");
+  } else {
+    console.log("✔ medical records (already present)");
+  }
+
+  // Prescriptions (standalone, QR-verifiable)
+  const rxExist = await prisma.prescription.count();
+  if (rxExist === 0) {
+    const consultation = await prisma.consultation.findFirst({
+      where: { patientId: patients[0]!.id },
+      orderBy: { createdAt: "desc" },
+    });
+    const samples = [
+      {
+        patientId: patients[0]!.id,
+        diagnosis: "Hypertension",
+        notes: "Monitor BP daily. Review in 2 weeks.",
+        items: JSON.stringify([
+          { medicine: "Amlodipine", dose: "5 mg", frequency: "1× daily", duration: "30 days", instructions: "Morning, after food" },
+          { medicine: "Vitamin D3", dose: "1000 IU", frequency: "1× daily", duration: "60 days", instructions: "With meals" },
+        ]),
+      },
+      {
+        patientId: patients[1]!.id,
+        diagnosis: "Acute bronchitis",
+        notes: "Complete full course even if symptoms improve.",
+        items: JSON.stringify([
+          { medicine: "Amoxicillin", dose: "500 mg", frequency: "3× daily", duration: "7 days", instructions: "After meals" },
+          { medicine: "Paracetamol", dose: "650 mg", frequency: "As needed", duration: "5 days", instructions: "Max 4 doses/day" },
+        ]),
+      },
+    ];
+    for (const s of samples) {
+      const no = await prisma.prescription.count();
+      await prisma.prescription.create({
+        data: {
+          prescriptionNo: `RX-${String(no + 1).padStart(4, "0")}`,
+          patientId: s.patientId,
+          doctorId: doctor.id,
+          consultationId: consultation?.id ?? null,
+          diagnosis: s.diagnosis,
+          notes: s.notes,
+          items: s.items,
+          hospitalId,
+          issuedAt: new Date(Date.now() - (no + 1) * 86400_000),
+        },
+      });
+    }
+    console.log("✔ 2 prescriptions");
+  } else {
+    console.log("✔ prescriptions (already present)");
+  }
+}
+
 async function main() {
   console.log("Seeding HMS database…");
 
@@ -708,6 +882,7 @@ async function main() {
   await seedPharmacy();
   await seedHr();
   await seedNotifications();
+  await seedPhase9();
 
   console.log("Seeding complete.");
 }

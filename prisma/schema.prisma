@@ -33,6 +33,7 @@ model Hospital {
   users    User[]
   roles    Role[]
   settings Settings[]
+  prescriptions Prescription[]
 }
 
 model User {
@@ -70,6 +71,8 @@ model User {
   payrollPaid        Payroll[]    @relation("PayrollPaidBy")
   performanceReviews PerformanceReview[] @relation("PerformanceReviewedBy")
   notifications      Notification[]
+  emergencyCases     EmergencyCase[] @relation("EmergencyCreatedBy")
+  emergencyEvents    EmergencyEvent[] @relation("EmergencyEventCreatedBy")
 
   @@index([roleId])
 }
@@ -118,6 +121,9 @@ model Patient {
   medicineSales     MedicineSale[]
   invoices          Invoice[]
   insurancePolicies InsurancePolicy[]
+  emergencyCases    EmergencyCase[]
+  medicalRecords    MedicalRecord[]
+  prescriptions     Prescription[]
 
   @@index([status])
 }
@@ -144,6 +150,7 @@ model Appointment {
 
   consultations Consultation[]
   invoices      Invoice[]
+  prescriptions Prescription[]
 
   @@index([patientId])
   @@index([doctorId])
@@ -174,6 +181,7 @@ model Consultation {
   updatedAt      DateTime     @updatedAt
 
   invoices Invoice[]
+  prescriptionDocs Prescription[]
 
   @@index([patientId])
   @@index([doctorId])
@@ -290,6 +298,9 @@ model Doctor {
   consultations   Consultation[]
   labOrders       LabOrder[]
   radiologyOrders RadiologyOrder[]
+  emergencyCases  EmergencyCase[]
+  medicalRecords  MedicalRecord[]
+  prescriptions   Prescription[]
 }
 
 model Nurse {
@@ -480,11 +491,11 @@ model Admission {
   updatedAt   DateTime  @updatedAt
 
   invoices Invoice[]
+  emergencyCase EmergencyCase?
 
   @@index([patientId])
   @@index([status])
 }
-
 model RefreshToken {
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
   userId          String    @db.ObjectId
@@ -873,4 +884,110 @@ model Notification {
   @@index([userId, read])
   @@index([type])
   @@index([createdAt])
+}
+
+// ============================================================================
+// Emergency: triage queue with ambulance & timeline
+// ============================================================================
+
+model EmergencyCase {
+  id                     String    @id @default(auto()) @map("_id") @db.ObjectId
+  caseNo                 String    @unique // e.g. ER-0001
+  patientId              String?   @db.ObjectId
+  patient                Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  walkInName             String? // unregistered casualty
+  walkInPhone            String?
+  age                    Int?
+  gender                 String? // MALE | FEMALE | OTHER
+  triageLevel            String    @default("GREEN") // RED | ORANGE | YELLOW | GREEN
+  condition              String? // chief complaint / provisional diagnosis
+  vitals                 String? // JSON {bp, pulse, temp, spo2, rr, gcs}
+  status                 String    @default("WAITING") // WAITING | IN_PROGRESS | STABILIZED | TRANSFERRED | ADMITTED | DISCHARGED
+  assignedDoctorId       String?   @db.ObjectId
+  assignedDoctor         Doctor?   @relation(fields: [assignedDoctorId], references: [id], onDelete: SetNull)
+  ambulanceRequested     Boolean   @default(false)
+  ambulanceDispatchedAt  DateTime?
+  ambulanceEtaMinutes    Int?
+  ambulanceNotes         String?
+  admittedAsAdmissionId  String?   @unique @db.ObjectId
+  admittedAsAdmission    Admission? @relation(fields: [admittedAsAdmissionId], references: [id], onDelete: SetNull)
+  createdById            String?   @db.ObjectId
+  createdBy              User?     @relation("EmergencyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  hospitalId             String?   @db.ObjectId
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  events EmergencyEvent[]
+
+  @@index([status])
+  @@index([triageLevel])
+  @@index([createdAt])
+}
+
+model EmergencyEvent {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  caseId       String         @db.ObjectId
+  case         EmergencyCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  type         String         @default("STATUS") // STATUS | AMBULANCE | DOCTOR | ADMISSION | NOTE
+  note         String?
+  createdById  String?        @db.ObjectId
+  createdBy    User?          @relation("EmergencyEventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
+
+  @@index([caseId])
+}
+
+// ============================================================================
+// Medical records: patient chart across departments
+// ============================================================================
+
+model MedicalRecord {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  recordNo   String    @unique // e.g. MR-0001
+  patientId  String    @db.ObjectId
+  patient    Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type       String    @default("GENERAL") // PRESCRIPTION | DIAGNOSIS | LAB | RADIOLOGY | ADMISSION | OPD | GENERAL
+  title      String
+  summary    String?
+  doctorId   String?   @db.ObjectId
+  doctor     Doctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  entityType String? // Consultation | Admission | LabOrder | RadiologyOrder | Prescription
+  entityId   String?
+  files      String? // JSON array {name, url}
+  hospitalId String?  @db.ObjectId
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([type])
+}
+
+// ============================================================================
+// Prescriptions: standalone with PDF + QR verification
+// ============================================================================
+
+model Prescription {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  prescriptionNo String        @unique // e.g. RX-0001
+  patientId      String        @db.ObjectId
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId       String?       @db.ObjectId
+  doctor         Doctor?       @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  consultationId String?       @db.ObjectId
+  consultation   Consultation? @relation(fields: [consultationId], references: [id], onDelete: SetNull)
+  appointmentId  String?       @db.ObjectId
+  appointment    Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  items          String // JSON array {medicine, medicineId?, dose, frequency, duration, instructions}
+  diagnosis      String?
+  notes          String?
+  status         String        @default("ACTIVE") // ACTIVE | COMPLETED | CANCELLED
+  issuedAt       DateTime      @default(now())
+  hospitalId     String?       @db.ObjectId
+  hospital       Hospital?     @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([status])
 }

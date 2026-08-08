@@ -22,7 +22,7 @@
 | 6 | Billing, Payments, Insurance | DONE |
 | 7 | HR & Payroll | DONE (employees, attendance, leaves, reviews, payroll runs + payslip PDF, staff roster) |
 | 8 | Reports, Analytics, Notifications | DONE (7 report types + PDF/Excel/print, analytics charts, Notification model + bell + page, lazy alerts + SMTP email) |
-| 9 | Emergency, Global Search, Settings | PENDING |
+| 9 | Emergency, Global Search, Settings | DONE (triage queue + ambulance + timeline, standalone prescriptions w/ PDF+QR verify, medical records, settings page, unified search) |
 | 10 | Polish: PWA, a11y, perf, seed, final gates | PENDING |
 
 ### Global gates (all phases)
@@ -279,6 +279,35 @@ Build order; each phase: schema → validate/generate → validators → service
 58. **Gates** — typecheck clean; lint 0 errors (2 pre-existing warnings in `scripts/` — untouched); build succeeds with `/reports`, `/analytics`, `/notifications` + 3 new API routes compiled.
 59. **Smoke test (live Atlas)** — analytics overview (5-month bucket zero-revenue month behavior OK), revenue report + PDF (1339 B) + Excel (6747 B) exports, runAlerts lazily created a real "Low stock: Ibuprofen" alert, list/unread/mark-all-read round-trip (5 → 0 unread). Browser verification still blocked by the same environment issue as Phase 7 (next start doesn't come up here).
 60. **Uncommitted** — Phase 8 + seed + PROGRESS.md; commit follows. Remaining: Phases 9–10 (see Remaining Work Plan above).
+
+### Session 10 — Phase 9: Emergency, Records, Prescriptions, Settings, Search
+
+**2026-08-08**
+
+61. **Schema** — new models (validated + client regenerated):
+    - `EmergencyCase` (caseNo ER-XXXX, patientId nullable → walk-in name/phone/age/gender for unregistered casualties, triageLevel RED|ORANGE|YELLOW|GREEN, vitals JSON, status WAITING|IN_PROGRESS|STABILIZED|TRANSFERRED|ADMITTED|DISCHARGED, assignedDoctorId, ambulance fields requested/dispatchedAt/etaMinutes/notes, optional admittedAsAdmissionId one-to-one → Admission) + `EmergencyEvent` (type STATUS|AMBULANCE|DOCTOR|ADMISSION|NOTE, note, createdBy).
+    - `MedicalRecord` (recordNo MR-XXXX, type PRESCRIPTION|DIAGNOSIS|LAB|RADIOLOGY|ADMISSION|OPD|GENERAL, title/summary/doctorId, optional entityType/entityId link-back).
+    - `Prescription` (prescriptionNo RX-XXXX, patient/doctor/consultationId/appointmentId, items JSON, diagnosis/notes, status ACTIVE|COMPLETED|CANCELLED, issuedAt, hospital relation for branding).
+    - Back-relations on User (emergencyCases/emergencyEvents), Doctor (emergencyCases/medicalRecords/prescriptions), Patient (3×), Consultation (prescriptionDocs — renamed because the legacy JSON `prescriptions` field owns the name), Admission (emergencyCase), Hospital (prescriptions).
+62. **Permissions** — added `emergency:manage`, `records:manage`, `prescriptions:manage` to the PermissionKey union + ALL_PERMISSIONS; granted: DOCTOR (all 3), NURSE (emergency/records manage), PHARMACIST (prescriptions manage). Existing `settings:manage`, `prescriptions:read/create`, `records:read`, `emergency:read` reused.
+63. **Validators** — `validators/emergency.ts` (create with patient-or-walkin refine, update, ambulance dispatch, event), `records.ts` (create), `prescriptions.ts` (items array min 1, status), `settings.ts` (hospital fields incl. working hours + duration, SMTP, alert thresholds).
+64. **Services**:
+    - `services/emergency.ts` — list (status/triage filters + search, sorted triage-desc/oldest-first, status counts), create (auto ER-XXXX, opening event, auto-dispatch when requested, EMERGENCY notification to DOCTOR/NURSE/ADMIN), update (status/triage/doctor → status event), dispatchAmbulance (ETA + AMBULANCE event), addEvent/listEvents; audit all mutations.
+    - `services/records.ts` — list (patient/type/search), create (MR-XXXX), getPatientRecords.
+    - `services/prescriptions.ts` — list/create (RX-XXXX), status update, **PDF via pdf-lib** (A4, hospital branding, items table w/ column widths + page overflow, notes, embedded **QR code** via `qrcode` → payload `{v, rx, id}`) and **verify** (public route renders an HTML verification card — no session required, minimal PII).
+    - `services/settings.ts` — settings key/value store overrides (SMTP + alert thresholds via the existing `Settings` KV model) + hospital-level fields on the `Hospital` row; all persisted with audits.
+    - `services/search.ts` — unified global search across patients, doctors, appointments, medicines, departments, employees → `{id, label, sub, href}`.
+65. **API** — `emergency` GET/POST, `emergency/[id]` GET/PATCH, `emergency/[id]/ambulance` POST, `emergency/[id]/events` GET/POST; `records` GET/POST, `records/patient/[patientId]` GET; `prescriptions` GET/POST (+pharmacy notification on issue), `prescriptions/[id]` GET/PATCH, `prescriptions/[id]/pdf` GET (inline PDF), `prescriptions/verify` GET (public HTML verification); `settings` GET/PATCH, `settings/smtp` PATCH, `settings/notifications` PATCH; `search` GET. Middleware: added NURSE to `/records`.
+66. **UI**:
+    - `components/features/emergency/emergency-page.tsx` → `/emergency` — stat cards (waiting/in-progress/ambulance), status filter chips, triage-dot queue rows w/ vitals badges, **CaseDrawer** (status/triage/doctor selects that update live, vitals, ambulance panel, timeline with inline event add), **CreateCaseDialog** (patient select XOR walk-in fields, triage, vitals grid, ambulance toggle), **AmbulanceDialog** (ETA + notes).
+    - `components/features/records/records-page.tsx` → `/records` — type tabs, debounced search, record list w/ type badges, **CreateRecordDialog** (patient/type/doctor/title/summary).
+    - `components/features/prescriptions/prescriptions-page.tsx` → `/prescriptions` — status stat cards, list w/ item preview, inline status select, PDF download, **CreatePrescriptionDialog** (patient/doctor/diagnosis + dynamic medicine rows w/ dose/frequency/duration from the medicines catalog).
+    - `components/features/settings/settings-page.tsx` → `/settings` — 3 tabs: **Hospital** (identity, logo URL, currency, tax, timezone, working hours, appointment duration), **SMTP** (host/port/user/pass/from/TLS), **Alerts** (low-stock threshold, expiry window, reminder lead time, email toggle).
+    - `components/layout/global-search.tsx` — replaced the 4-endpoint fan-out with the unified `/api/search` (also matches appointments, departments, staff); keep-per-entity icons.
+67. **Seed** — `seedPhase9()` (idempotent): 3 emergency cases (RED w/ dispatched ambulance + timeline events, ORANGE waiting, YELLOW stabilized walk-in), 4 medical records across types, 2 prescriptions (QR-verifiable). Full seed re-ran against Atlas.
+68. **Gates** — typecheck clean; lint 0 errors (2 pre-existing `scripts/` warnings); build succeeds with `/emergency`, `/records`, `/prescriptions`, `/settings` + 12 new API routes.
+69. **Smoke test (live Atlas)** — case list + counts, ambulance dispatch (ETA persisted), timeline event add, record create/delete round-trip (MR-0005), prescription PDF render (4159 B), **QR verify round-trip** (true), status update + restore, settings overview + hospital save, search "Zara" → patient + appointment hits.
+70. **Uncommitted** — Phase 9 + seed + PROGRESS.md; commit follows. Remaining: Phase 10 (polish — see Remaining Work Plan above).
 
 ---
 

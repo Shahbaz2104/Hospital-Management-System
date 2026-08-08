@@ -4,12 +4,15 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
+  BedDouble,
+  Building2,
+  CalendarClock,
   FileText,
   Loader2,
   Pill,
   Search,
   Stethoscope,
-  Users,
+  UserRound,
 } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -17,18 +20,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { apiGet } from "@/lib/api";
 
-type PatientHit = { id: string; patientNo: string; firstName: string; lastName: string };
-type DoctorHit = { id: string; user: { firstName: string; lastName: string; title: string | null }; specialization: string | null };
-type MedicineHit = { id: string; name: string; category: string; unit: string; price: number };
-type InvoiceHit = {
-  id: string;
-  invoiceNo: string;
-  total: number;
-  status: string;
-  patient: { patientNo: string; firstName: string; lastName: string };
-};
+type SearchHit = { id: string; label: string; sub: string; href: string };
 
-const money = (n: number) => `$${n.toFixed(2)}`;
+function iconForHref(href: string) {
+  if (href.startsWith("/patients")) return <UserRound className="size-3.5" />;
+  if (href.startsWith("/doctors")) return <Stethoscope className="size-3.5" />;
+  if (href.startsWith("/appointments")) return <CalendarClock className="size-3.5" />;
+  if (href.startsWith("/pharmacy")) return <Pill className="size-3.5" />;
+  if (href.startsWith("/departments")) return <Building2 className="size-3.5" />;
+  if (href.startsWith("/staff")) return <BedDouble className="size-3.5" />;
+  return <FileText className="size-3.5" />;
+}
 
 export function GlobalSearch() {
   const router = useRouter();
@@ -39,37 +41,11 @@ export function GlobalSearch() {
 
   const { data, isFetching } = useQuery({
     queryKey: ["global-search", query.trim()],
-    queryFn: async () => {
-      const [patients, doctors, medicines, invoices] = await Promise.all([
-        apiGet<{ items: PatientHit[] }>("/patients", { search: query.trim(), page: 1, pageSize: 5 }),
-        apiGet<{ items: DoctorHit[] }>("/doctors", { search: query.trim(), page: 1, pageSize: 5 }),
-        apiGet<{ items: MedicineHit[] }>("/medicines", { search: query.trim() }),
-        apiGet<{ items: InvoiceHit[]; total: number }>("/billing/invoices", {
-          search: query.trim(),
-          page: 1,
-          pageSize: 5,
-        }),
-      ]);
-      return {
-        patients: patients.items.slice(0, 5),
-        doctors: doctors.items.slice(0, 5),
-        medicines: medicines.items.slice(0, 5),
-        invoices: invoices.items.slice(0, 5),
-      };
-    },
+    queryFn: () => apiGet<{ items: SearchHit[]; total: number }>("/search", { q: query.trim(), limit: 10 }),
     enabled: active,
   });
 
-  const results =
-    active && data
-      ? [
-          ...data.patients.map((p) => ({ key: `p-${p.id}`, href: `/patients/${p.id}`, icon: <Users className="size-3.5" />, title: `${p.firstName} ${p.lastName}`, subtitle: `Patient · ${p.patientNo}` })),
-          ...data.doctors.map((d) => ({ key: `d-${d.id}`, href: `/doctors/${d.id}`, icon: <Stethoscope className="size-3.5" />, title: `${d.user.firstName} ${d.user.lastName}`, subtitle: `Doctor · ${d.specialization ?? "General"}` })),
-          ...data.medicines.map((m) => ({ key: `m-${m.id}`, href: "/pharmacy", icon: <Pill className="size-3.5" />, title: m.name, subtitle: `Medicine · ${m.category.toLowerCase()} · ${money(m.price)}/${m.unit}` })),
-          ...data.invoices.map((i) => ({ key: `i-${i.id}`, href: "/billing", icon: <FileText className="size-3.5" />, title: i.invoiceNo, subtitle: `Invoice · ${i.patient.firstName} ${i.patient.lastName} · ${i.status.toLowerCase()}` })),
-        ]
-      : [];
-
+  const results = data?.items ?? [];
   const firstHref = results[0]?.href;
 
   function onSelect(href: string) {
@@ -84,7 +60,7 @@ export function GlobalSearch() {
         <div className="relative hidden w-full max-w-md sm:block">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search patients, doctors, medicines, invoices..."
+            placeholder="Search patients, doctors, appointments, medicines, departments, staff…"
             className="pl-9"
             aria-label="Global search"
             value={query}
@@ -128,17 +104,17 @@ export function GlobalSearch() {
           <div className="max-h-80 overflow-y-auto p-1.5" data-lenis-prevent>
             {results.map((r) => (
               <button
-                key={r.key}
+                key={r.id}
                 type="button"
                 onClick={() => onSelect(r.href)}
                 className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted"
               >
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                  {r.icon}
+                  {iconForHref(r.href)}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{r.title}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{r.subtitle}</span>
+                  <span className="block truncate font-medium">{r.label}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{r.sub}</span>
                 </span>
               </button>
             ))}
