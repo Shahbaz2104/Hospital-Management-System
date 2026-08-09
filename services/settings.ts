@@ -92,7 +92,7 @@ export async function updateHospitalSettings(actor: { id: string }, input: Hospi
       appointmentDuration: input.appointmentDuration,
     },
   });
-  logAudit({ userId: actor.id, action: "SETTINGS_HOSPITAL_UPDATED", entity: "Hospital", entityId: hospital.id });
+  await logAudit({ userId: actor.id, action: "SETTINGS_HOSPITAL_UPDATED", entity: "Hospital", entityId: hospital.id });
   return updated;
 }
 
@@ -111,7 +111,7 @@ export async function updateSmtpSettings(actor: { id: string }, input: SmtpSetti
     updates.push(upsertSettings(hospital.id, "smtp.pass", input.pass));
   }
   await Promise.all(updates);
-  logAudit({ userId: actor.id, action: "SETTINGS_SMTP_UPDATED", entity: "Hospital", entityId: hospital.id });
+  await logAudit({ userId: actor.id, action: "SETTINGS_SMTP_UPDATED", entity: "Hospital", entityId: hospital.id });
   return { ok: true };
 }
 
@@ -124,6 +124,6 @@ export async function updateNotificationSettings(actor: { id: string }, input: N
     upsertSettings(hospital.id, "notify.appointmentReminderMinutes", String(input.appointmentReminderMinutes)),
     upsertSettings(hospital.id, "notify.emailOnAlerts", String(input.emailOnAlerts)),
   ]);
-  logAudit({ userId: actor.id, action: "SETTINGS_NOTIFICATIONS_UPDATED", entity: "Hospital", entityId: hospital.id });
+  await logAudit({ userId: actor.id, action: "SETTINGS_NOTIFICATIONS_UPDATED", entity: "Hospital", entityId: hospital.id });
   return { ok: true };
 }

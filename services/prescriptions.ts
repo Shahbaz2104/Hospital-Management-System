@@ -75,7 +75,7 @@ export async function createPrescription(actor: { id: string }, input: Prescript
     },
     include: detailInclude,
   });
-  logAudit({ userId: actor.id, action: "PRESCRIPTION_CREATED", entity: "Prescription", entityId: prescription.id, meta: { prescriptionNo } });
+  await logAudit({ userId: actor.id, action: "PRESCRIPTION_CREATED", entity: "Prescription", entityId: prescription.id, meta: { prescriptionNo } });
   return prescription;
 }
 
@@ -87,7 +87,7 @@ export async function updatePrescriptionStatus(
   const existing = await db.prescription.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Prescription not found");
   const updated = await db.prescription.update({ where: { id }, data: { status }, include: detailInclude });
-  logAudit({ userId: actor.id, action: "PRESCRIPTION_STATUS", entity: "Prescription", entityId: id, meta: { status } });
+  await logAudit({ userId: actor.id, action: "PRESCRIPTION_STATUS", entity: "Prescription", entityId: id, meta: { status } });
   return updated;
 }
 

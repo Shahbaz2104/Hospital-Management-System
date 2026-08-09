@@ -119,7 +119,7 @@ export async function createEmergencyCase(
     entityId: case_.id,
   });
 
-  logAudit({ userId: actor.id, action: "EMERGENCY_CREATED", entity: "EmergencyCase", entityId: case_.id, meta: { caseNo } });
+  await logAudit({ userId: actor.id, action: "EMERGENCY_CREATED", entity: "EmergencyCase", entityId: case_.id, meta: { caseNo } });
   return db.emergencyCase.findUnique({ where: { id: case_.id }, include: listInclude });
 }
 
@@ -154,7 +154,7 @@ export async function updateEmergencyCase(
     });
   }
 
-  logAudit({ userId: actor.id, action: "EMERGENCY_UPDATED", entity: "EmergencyCase", entityId: id, meta: { changes } });
+  await logAudit({ userId: actor.id, action: "EMERGENCY_UPDATED", entity: "EmergencyCase", entityId: id, meta: { changes } });
   return updated;
 }
 
@@ -184,7 +184,7 @@ export async function dispatchAmbulance(
       createdById: actor.id,
     },
   });
-  logAudit({ userId: actor.id, action: "EMERGENCY_AMBULANCE", entity: "EmergencyCase", entityId: id, meta: { etaMinutes: input.etaMinutes } });
+  await logAudit({ userId: actor.id, action: "EMERGENCY_AMBULANCE", entity: "EmergencyCase", entityId: id, meta: { etaMinutes: input.etaMinutes } });
   return updated;
 }
 
@@ -195,7 +195,7 @@ export async function addEvent(actor: { id: string }, id: string, input: Emergen
     data: { caseId: id, type: input.type, note: input.note, createdById: actor.id },
     include: { createdBy: { select: { firstName: true, lastName: true } } },
   });
-  logAudit({ userId: actor.id, action: "EMERGENCY_EVENT", entity: "EmergencyCase", entityId: id, meta: { type: input.type } });
+  await logAudit({ userId: actor.id, action: "EMERGENCY_EVENT", entity: "EmergencyCase", entityId: id, meta: { type: input.type } });
   return event;
 }
 

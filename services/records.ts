@@ -57,7 +57,7 @@ export async function createRecord(actor: { id: string }, input: MedicalRecordCr
       doctor: { include: { user: { select: { title: true, firstName: true, lastName: true } } } },
     },
   });
-  logAudit({ userId: actor.id, action: "RECORD_CREATED", entity: "MedicalRecord", entityId: record.id, meta: { recordNo } });
+  await logAudit({ userId: actor.id, action: "RECORD_CREATED", entity: "MedicalRecord", entityId: record.id, meta: { recordNo } });
   return record;
 }
 

@@ -44,7 +44,7 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
 
   switch (type) {
     case "patients": {
-      const [patients, totalPatients] = await Promise.all([
+      const [patients, totalPatients, genderGroups] = await Promise.all([
         db.patient.findMany({
           where: { createdAt: dateFilter },
           include: { _count: { select: { appointments: true } } },
@@ -52,10 +52,15 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
           take: 500,
         }),
         db.patient.count({ where: { createdAt: dateFilter } }),
+        db.patient.groupBy({
+          by: ["gender"],
+          where: { createdAt: dateFilter },
+          _count: { _all: true },
+        }),
       ]);
       const genderCounts: Record<string, number> = {};
-      for (const p of patients) {
-        genderCounts[p.gender ?? "UNKNOWN"] = (genderCounts[p.gender ?? "UNKNOWN"] ?? 0) + 1;
+      for (const g of genderGroups) {
+        genderCounts[g.gender ?? "UNKNOWN"] = g._count._all;
       }
       const genderLabel = (g: string) =>
         g === "MALE" ? "Male" : g === "FEMALE" ? "Female" : g === "OTHER" ? "Other" : "Unknown";
@@ -88,16 +93,12 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
     }
 
     case "revenue": {
-      const [invoices, payments, paymentMethods] = await Promise.all([
+      const [invoices, paymentMethods, invoiceAgg, paymentAgg, invoiceCount, paymentCount] = await Promise.all([
         db.invoice.findMany({
           where: { createdAt: dateFilter },
           include: { patient: { select: { firstName: true, lastName: true } } },
           orderBy: { createdAt: "desc" },
           take: 500,
-        }),
-        db.payment.findMany({
-          where: { paidAt: dateFilter, amount: { gt: 0 } },
-          select: { amount: true, paidAt: true, method: true },
         }),
         db.payment.groupBy({
           by: ["method"],
@@ -105,10 +106,24 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
           _sum: { amount: true },
           _count: { _all: true },
         }),
+        db.invoice.aggregate({
+          where: { createdAt: dateFilter },
+          _sum: { total: true, paid: true },
+        }),
+        db.payment.aggregate({
+          where: { paidAt: dateFilter, amount: { gt: 0 } },
+          _sum: { amount: true },
+        }),
+        db.invoice.count({ where: { createdAt: dateFilter } }),
+        db.payment.count({ where: { paidAt: dateFilter, amount: { gt: 0 } } }),
       ]);
-      const collected = payments.reduce((s, p) => s + p.amount, 0);
-      const billed = invoices.reduce((s, i) => s + i.total, 0);
-      const outstanding = invoices.filter((i) => i.status !== "CANCELLED").reduce((s, i) => s + (i.total - i.paid), 0);
+      const billed = invoiceAgg._sum.total ?? 0;
+      const collected = paymentAgg._sum.amount ?? 0;
+      const unpaidAgg = await db.invoice.aggregate({
+        where: { createdAt: dateFilter, status: { not: "CANCELLED" } },
+        _sum: { total: true, paid: true },
+      });
+      const outstanding = Math.max(0, (unpaidAgg._sum.total ?? 0) - (unpaidAgg._sum.paid ?? 0));
       return {
         ...base,
         title: "Revenue report",
@@ -134,8 +149,8 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
           { label: "Billed", value: fmt(billed) },
           { label: "Collected", value: fmt(collected) },
           { label: "Outstanding", value: fmt(outstanding) },
-          { label: "Invoices", value: invoices.length },
-          { label: "Payments", value: payments.length },
+          { label: "Invoices", value: invoiceCount },
+          { label: "Payments", value: paymentCount },
         ],
         ...(paymentMethods.length
           ? { paymentMethods: paymentMethods.map((m) => ({ method: m.method, amount: fmt(m._sum.amount ?? 0), count: m._count._all })) }
@@ -144,10 +159,12 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
     }
 
     case "doctors": {
-      const doctors = await db.doctor.findMany({
-        include: { user: { select: { firstName: true, lastName: true, title: true } }, department: { select: { name: true } } },
-        take: 100,
-      });
+      const [doctors, doctorCount] = await Promise.all([
+        db.doctor.findMany({
+          include: { user: { select: { firstName: true, lastName: true, title: true } }, department: { select: { name: true } } },
+        }),
+        db.doctor.count(),
+      ]);
       const ids = doctors.map((d) => d.id);
       const [apptGroups, consGroups, invoiceGroups] = await Promise.all([
         db.appointment.groupBy({ by: ["doctorId"], where: { doctorId: { in: ids }, date: dateFilter }, _count: { _all: true } }),
@@ -193,7 +210,7 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
           revenue: fmt(revenueByDoctor.get(d.id) ?? 0),
         })),
         summary: [
-          { label: "Doctors", value: doctors.length },
+          { label: "Doctors", value: doctorCount },
           { label: "Appointments", value: [...apptMap.values()].reduce((a, b) => a + b, 0) },
           { label: "Consultations", value: [...consMap.values()].reduce((a, b) => a + b, 0) },
           { label: "Billed revenue", value: fmt([...revenueByDoctor.values()].reduce((a, b) => a + b, 0)) },
@@ -202,7 +219,7 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
     }
 
     case "appointments": {
-      const [items, statusGroups, typeGroups] = await Promise.all([
+      const [items, totalCount, statusGroups, typeGroups] = await Promise.all([
         db.appointment.findMany({
           where: { date: dateFilter },
           include: {
@@ -213,6 +230,7 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
           orderBy: { date: "desc" },
           take: 500,
         }),
+        db.appointment.count({ where: { date: dateFilter } }),
         db.appointment.groupBy({ by: ["status"], where: { date: dateFilter }, _count: { _all: true } }),
         db.appointment.groupBy({ by: ["type"], where: { date: dateFilter }, _count: { _all: true } }),
       ]);
@@ -240,7 +258,7 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
           status: a.status,
         })),
         summary: [
-          { label: "Total", value: items.length },
+          { label: "Total", value: totalCount },
           ...statusGroups.map((g) => ({ label: g.status, value: g._count._all })),
           ...typeGroups.map((g) => ({ label: g.type, value: g._count._all })),
         ],
@@ -248,12 +266,16 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
     }
 
     case "medicines": {
-      const [sales, medicines] = await Promise.all([
-        db.medicineSale.findMany({ where: { createdAt: dateFilter }, take: 500 }),
+      const [saleItems, saleCount, medicines] = await Promise.all([
+        db.medicineSale.findMany({
+          where: { createdAt: dateFilter },
+          select: { items: true },
+        }),
+        db.medicineSale.count({ where: { createdAt: dateFilter } }),
         db.medicine.findMany({ take: 300 }),
       ]);
       const usage = new Map<string, { qty: number; revenue: number }>();
-      for (const sale of sales) {
+      for (const sale of saleItems) {
         let items: { medicineId?: string; name?: string; quantity?: number; unitPrice?: number }[] = [];
         try {
           items = JSON.parse(sale.items);
@@ -266,7 +288,6 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
           usage.set(id, { qty: cur.qty + qty, revenue: cur.revenue + revenue });
         }
       }
-      const nameOf = new Map(medicines.map((m) => [m.id, m]));
       const rows = medicines
         .map((m) => {
           const u = usage.get(m.id) ?? { qty: 0, revenue: 0 };
@@ -281,10 +302,9 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
         })
         .sort((a, b) => Number(b.soldQty) - Number(a.soldQty))
         .slice(0, 50);
-      const totalSold = medicines.reduce((s, m) => s + (usage.get(m.id)?.qty ?? 0), 0);
+      const totalSold = [...usage.values()].reduce((s, u) => s + u.qty, 0);
       const lowStockCount = medicines.filter((m) => m.stock <= m.reorderLevel).length;
       const salesTotal = [...usage.values()].reduce((s, u) => s + u.revenue, 0);
-      void nameOf;
       return {
         ...base,
         title: "Medicine report",
@@ -301,7 +321,7 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
           { label: "Units dispensed", value: totalSold },
           { label: "Sales value", value: fmt(salesTotal) },
           { label: "Low stock items", value: lowStockCount },
-          { label: "Sale transactions", value: sales.length },
+          { label: "Sale transactions", value: saleCount },
         ],
       };
     }
@@ -346,20 +366,24 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
     }
 
     case "admissions": {
-      const [items, statusGroups, beds] = await Promise.all([
+      const [items, totalCount, statusGroups, beds, dischargeRows] = await Promise.all([
         db.admission.findMany({
           where: { admittedAt: dateFilter },
           include: { patient: { select: { firstName: true, lastName: true, patientNo: true } }, doctor: { include: { user: { select: { firstName: true, lastName: true, title: true } } } } },
           orderBy: { admittedAt: "desc" },
           take: 500,
         }),
+        db.admission.count({ where: { admittedAt: dateFilter } }),
         db.admission.groupBy({ by: ["status"], where: { admittedAt: dateFilter }, _count: { _all: true } }),
         db.bed.groupBy({ by: ["status"], _count: { _all: true } }),
+        db.admission.findMany({
+          where: { admittedAt: dateFilter, dischargeAt: { not: null } },
+          select: { admittedAt: true, dischargeAt: true },
+        }),
       ]);
-      const discharged = items.filter((a) => a.dischargeAt);
       const avgStayDays =
-        discharged.length > 0
-          ? discharged.reduce((s, a) => s + (a.dischargeAt!.getTime() - a.admittedAt.getTime()) / 86_400_000, 0) / discharged.length
+        dischargeRows.length > 0
+          ? dischargeRows.reduce((s, a) => s + (a.dischargeAt!.getTime() - a.admittedAt.getTime()) / 86_400_000, 0) / dischargeRows.length
           : 0;
       return {
         ...base,
@@ -381,7 +405,7 @@ export async function runReport(type: ReportType, opts: { from?: string; to?: st
           status: a.status,
         })),
         summary: [
-          { label: "Admissions", value: items.length },
+          { label: "Admissions", value: totalCount },
           { label: "Avg stay", value: `${avgStayDays.toFixed(1)} days` },
           ...statusGroups.map((g) => ({ label: g.status, value: g._count._all })),
           { label: "Occupied beds", value: beds.find((b) => b.status === "OCCUPIED")?._count._all ?? 0 },
