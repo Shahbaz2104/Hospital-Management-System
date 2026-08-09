@@ -9,7 +9,6 @@ export const GET = route(async (req) => {
   const params = new URL(req.url).searchParams;
   const items = await listMedicines({
     category: params.get("category") ?? "ALL",
-    status: params.get("status") ?? "ALL",
     search: params.get("search") ?? undefined,
   });
   return ok({ items });

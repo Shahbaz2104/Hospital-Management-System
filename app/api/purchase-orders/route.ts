@@ -1,12 +1,7 @@
 import { requirePermission } from "@/lib/auth/guards";
-import { ApiError, assertInput, getIp, ok, route } from "@/lib/http";
+import { assertInput, getIp, ok, route } from "@/lib/http";
 import { logAudit } from "@/services/audit";
-import {
-  cancelPurchaseOrder,
-  createPurchaseOrder,
-  listPurchaseOrders,
-  receivePurchaseOrder,
-} from "@/services/pharmacy";
+import { createPurchaseOrder, listPurchaseOrders } from "@/services/pharmacy";
 import { purchaseOrderSchema } from "@/validators/pharmacy";
 
 export const GET = route(async (req) => {
@@ -29,35 +24,4 @@ export const POST = route(async (req) => {
     ipAddress: getIp(req),
   });
   return ok(order);
-});
-
-export const PATCH = route(async (req, ctx) => {
-  const actor = await requirePermission("pharmacy:manage");
-  const { id } = await ctx.params;
-  const body = await req.json().catch(() => null);
-  const action = body && typeof body === "object" ? String((body as Record<string, unknown>).action ?? "") : "";
-
-  if (action === "receive") {
-    const order = await receivePurchaseOrder({ userId: actor.id, hospitalId: actor.hospitalId }, id);
-    await logAudit({
-      userId: actor.id,
-      action: "PURCHASE_ORDER_RECEIVED",
-      entity: "PurchaseOrder",
-      entityId: id,
-      ipAddress: getIp(req),
-    });
-    return ok(order);
-  }
-  if (action === "cancel") {
-    const order = await cancelPurchaseOrder({ userId: actor.id, hospitalId: actor.hospitalId }, id);
-    await logAudit({
-      userId: actor.id,
-      action: "PURCHASE_ORDER_CANCELLED",
-      entity: "PurchaseOrder",
-      entityId: id,
-      ipAddress: getIp(req),
-    });
-    return ok(order);
-  }
-  throw new ApiError(400, "Unknown action");
 });

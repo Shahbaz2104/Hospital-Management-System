@@ -47,7 +47,7 @@
 | 28 | **Multi-tenant: settings/HR target first hospital**, lists ignore `hospitalId` | `services/settings.ts:32,72,97,112`, list routes — **FIXED** `15c24e7` (settings + HR resolve hospital from `actor.hospitalId`) |
 | 29 | **Sequence counters break past 9999** (string compare) — all `nextXxx()` helpers | 12+ services — **FIXED** `15c24e7` (`lib/sequences.ts` numeric max; 20 call sites) |
 | 30 | **Null-role crash** — `user.role.rolePermissions` deref without check | `session.ts:77`, `auth.ts:24` — **FIXED** `15c24e7` (empty permissions + UNASSIGNED role name) |
-| 31 | **`listMedicines` ignores `status` filter** | `services/pharmacy.ts:54-69` — **FIXED** `15c24e7` |
+| 31 | **`listMedicines` ignores `status` filter** | `services/pharmacy.ts:54-69` — resolved: `Medicine` has no `status` field (only `active`); the `15c24e7` "fix" added a `where.status` that would 500 on Prisma unknown-arg, removed and dead param dropped from route+service (no UI uses it) |
 | 32 | **DATABASE_URL normalize edge** (trailing path) | `lib/env.ts:34-39` — **FIXED** `15c24e7` (strip trailing slash, test trimmed base) |
 | 33 | Minor: missing GET handlers, user-menu shows Settings for all roles, roles/permissions catalog exposed to patients, dangling hospital ref, login doesn't revoke old refresh tokens | misc — **FIXED** `15c24e7` (9 detail GETs added; user-menu Settings gated to SUPER_ADMIN/HOSPITAL_ADMIN; roles/permissions routes guarded `users:read`; `issueSession` revokes prior refresh tokens) |
 

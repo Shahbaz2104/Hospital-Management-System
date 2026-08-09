@@ -1272,6 +1272,31 @@ async function topUpLabOrders(target: number) {
   console.log(`✔ +${need} lab orders (total ${target})`);
 }
 
+async function topUpLabTests(target: number) {
+  const hospital = await prisma.hospital.findFirst();
+  const existing = await prisma.labTest.count();
+  let created = 0;
+  for (const t of LAB_TESTS) {
+    const no = LAB_TESTS.indexOf(t) + 1;
+    if (no > target) break;
+    const exists = await prisma.labTest.findUnique({ where: { code: t.code } });
+    if (exists) continue;
+    await prisma.labTest.create({
+      data: {
+        name: t.name,
+        code: t.code,
+        category: t.name.includes("Blood") || t.name.includes("Hemoglobin") ? "HEMATOLOGY" : "BIOCHEMISTRY",
+        unit: t.unit,
+        normalRange: t.normalRange,
+        price: 5 + (no % 8) * 5,
+        hospitalId: hospital?.id ?? null,
+      },
+    });
+    created++;
+  }
+  console.log(`✔ +${created} lab tests (total ${existing + created}/${target})`);
+}
+
 async function seedPhase10() {
   console.log("\nSeeding spec-scale dataset…");
   await topUpDepartments(10);
@@ -1282,6 +1307,7 @@ async function seedPhase10() {
   await topUpAppointments(500);
   await topUpInvoices(200);
   await topUpAdmissions(100);
+  await topUpLabTests(10);
   await topUpLabOrders(50);
   console.log("Spec-scale dataset complete.");
 }
