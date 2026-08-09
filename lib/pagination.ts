@@ -1,7 +1,8 @@
 export function parseListParams(url: URL, defaults = { pageSize: 15 }) {
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+  // Cap is 500 so calendar views can fetch a full month in one request.
   const pageSize = Math.min(
-    100,
+    500,
     Math.max(1, Number(url.searchParams.get("pageSize")) || defaults.pageSize)
   );
   const search = url.searchParams.get("search")?.trim() ?? "";

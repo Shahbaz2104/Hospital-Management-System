@@ -55,7 +55,7 @@ export function AppointmentCalendar({
   const byDate = React.useMemo(() => {
     const map = new Map<string, CalendarAppointment[]>();
     for (const a of appointments) {
-      const key = format(new Date(a.date + "T00:00:00"), "yyyy-MM-dd");
+      const key = format(new Date(a.date), "yyyy-MM-dd");
       const list = map.get(key) ?? [];
       list.push(a);
       map.set(key, list);

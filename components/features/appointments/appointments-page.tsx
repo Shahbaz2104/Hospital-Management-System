@@ -434,7 +434,7 @@ export function AppointmentsPage() {
                     {a.startTime}
                   </p>
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    {format(new Date(a.date + "T00:00:00"), "MMM d")}
+                    {format(new Date(a.date), "MMM d")}
                   </p>
                 </div>
                 <div className="min-w-40 leading-tight">

@@ -13,7 +13,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("pharmacy:manage");
-  const input = assertInput(saleSchema, await req.json());
+  const input = assertInput(saleSchema, await req.json().catch(() => null));
   const sale = await createSale({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   await logAudit({
     userId: actor.id,

@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
 import type { EquipmentInput } from "@/validators/pharmacy";
-import { logAudit } from "@/services/audit";
 
 type Actor = { userId: string; hospitalId?: string | null };
 
@@ -61,40 +60,18 @@ export async function createEquipment(actor: Actor, input: EquipmentInput) {
       hospitalId: actor.hospitalId ?? null,
     },
   });
-  await logAudit({
-    userId: actor.userId,
-    action: "EQUIPMENT_CREATED",
-    entity: "MedicalEquipment",
-    entityId: equipment.id,
-    meta: { name: equipment.name, code },
-  });
   return equipment;
 }
 
 export async function updateEquipment(actor: Actor, id: string, input: Partial<EquipmentInput>) {
   const existing = await db.medicalEquipment.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Equipment not found");
-  const equipment = await db.medicalEquipment.update({ where: { id }, data: input });
-  await logAudit({
-    userId: actor.userId,
-    action: "EQUIPMENT_UPDATED",
-    entity: "MedicalEquipment",
-    entityId: id,
-    meta: { name: equipment.name },
-  });
-  return equipment;
+  return db.medicalEquipment.update({ where: { id }, data: input });
 }
 
-export async function deleteEquipment(actor: Actor, id: string) {
+export async function deleteEquipment(_actor: Actor, id: string) {
   const existing = await db.medicalEquipment.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Equipment not found");
   await db.medicalEquipment.delete({ where: { id } });
-  await logAudit({
-    userId: actor.userId,
-    action: "EQUIPMENT_DELETED",
-    entity: "MedicalEquipment",
-    entityId: id,
-    meta: { name: existing.name },
-  });
   return { deleted: true };
 }

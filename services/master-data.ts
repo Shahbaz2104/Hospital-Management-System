@@ -48,40 +48,26 @@ export async function createDepartment(actor: Actor, input: DepartmentInput) {
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "DEPARTMENT_CREATED",
-    entity: "Department",
-    entityId: dept.id,
-    meta: { name: dept.name, code: dept.code },
-  });
   return dept;
 }
 
 export async function updateDepartment(
-  actor: Actor,
+  _actor: Actor,
   id: string,
   input: Partial<DepartmentInput>
 ) {
   const dept = await db.department.findUnique({ where: { id } });
   if (!dept) throw new ApiError(404, "Department not found");
 
-  const updated = await db.department.update({
+  return db.department.update({
     where: { id },
     data: {
       name: input.name,
+      code: input.code,
       description: input.description ?? undefined,
       headDoctorId: input.headDoctorId ?? undefined,
     },
   });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "DEPARTMENT_UPDATED",
-    entity: "Department",
-    entityId: updated.id,
-  });
-  return updated;
 }
 
 export async function deleteDepartment(actor: Actor, id: string) {
@@ -153,25 +139,18 @@ export async function createDoctor(actor: Actor, input: DoctorInput) {
     });
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "DOCTOR_CREATED",
-    entity: "Doctor",
-    entityId: doctor.id,
-    meta: { email: input.email },
-  });
   return doctor;
 }
 
 export async function updateDoctor(
-  actor: Actor,
+  _actor: Actor,
   id: string,
   input: DoctorUpdateInput
 ) {
   const doctor = await db.doctor.findUnique({ where: { id } });
   if (!doctor) throw new ApiError(404, "Doctor not found");
 
-  const updated = await db.doctor.update({
+  return db.doctor.update({
     where: { id },
     data: {
       departmentId: input.departmentId ?? undefined,
@@ -184,14 +163,6 @@ export async function updateDoctor(
       bio: input.bio ?? undefined,
     },
   });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "DOCTOR_UPDATED",
-    entity: "Doctor",
-    entityId: id,
-  });
-  return updated;
 }
 
 export async function deleteDoctor(actor: Actor, id: string) {
@@ -259,26 +230,13 @@ export async function createNurse(actor: Actor, input: NurseInput) {
     });
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "NURSE_CREATED",
-    entity: "Nurse",
-    entityId: nurse.id,
-    meta: { email: input.email },
-  });
   return nurse;
 }
 
-export async function deleteNurse(actor: Actor, id: string) {
+export async function deleteNurse(_actor: Actor, id: string) {
   const nurse = await db.nurse.findUnique({ where: { id } });
   if (!nurse) throw new ApiError(404, "Nurse not found");
   await db.nurse.delete({ where: { id } });
-  await logAudit({
-    userId: actor.userId,
-    action: "NURSE_DELETED",
-    entity: "Nurse",
-    entityId: id,
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -304,7 +262,7 @@ export async function listRooms(search = "") {
   });
 }
 
-export async function createRoom(actor: Actor, input: RoomInput) {
+export async function createRoom(_actor: Actor, input: RoomInput) {
   const existing = await db.room.findUnique({ where: { number: input.number } });
   if (existing) throw new ApiError(409, `Room ${input.number} already exists`);
 
@@ -327,21 +285,14 @@ export async function createRoom(actor: Actor, input: RoomInput) {
   }));
   await db.bed.createMany({ data: beds });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "ROOM_CREATED",
-    entity: "Room",
-    entityId: room.id,
-    meta: { number: room.number, beds: beds.length },
-  });
   return { ...room, bedCount: beds.length };
 }
 
-export async function updateRoom(actor: Actor, id: string, input: Partial<RoomInput>) {
+export async function updateRoom(_actor: Actor, id: string, input: Partial<RoomInput>) {
   const room = await db.room.findUnique({ where: { id } });
   if (!room) throw new ApiError(404, "Room not found");
 
-  const updated = await db.room.update({
+  return db.room.update({
     where: { id },
     data: {
       name: input.name ?? undefined,
@@ -352,15 +303,6 @@ export async function updateRoom(actor: Actor, id: string, input: Partial<RoomIn
       status: input.status,
     },
   });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "ROOM_UPDATED",
-    entity: "Room",
-    entityId: id,
-    meta: { number: updated.number },
-  });
-  return updated;
 }
 
 export async function setBedStatus(

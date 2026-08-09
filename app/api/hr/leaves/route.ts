@@ -16,7 +16,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("hr:manage");
-  const input = assertInput(leaveSchema, await req.json());
+  const input = assertInput(leaveSchema, await req.json().catch(() => null));
   const leave = await createLeave({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   return ok(leave, { status: 201 });
 });

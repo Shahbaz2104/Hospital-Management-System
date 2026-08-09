@@ -33,19 +33,29 @@ export const GET = route(async (req: Request) => {
   ]);
 
   return ok({
-    items: logs.map((l) => ({
-      id: l.id,
-      action: l.action,
-      entity: l.entity,
-      entityId: l.entityId,
-      meta: l.meta ? JSON.parse(l.meta) : null,
-      ipAddress: l.ipAddress,
-      userAgent: l.userAgent,
-      createdAt: l.createdAt,
-      actor: l.user
-        ? `${l.user.firstName} ${l.user.lastName} (${l.user.email})`
-        : null,
-    })),
+    items: logs.map((l) => {
+      let meta: unknown = null;
+      if (l.meta) {
+        try {
+          meta = JSON.parse(l.meta);
+        } catch {
+          meta = null;
+        }
+      }
+      return {
+        id: l.id,
+        action: l.action,
+        entity: l.entity,
+        entityId: l.entityId,
+        meta,
+        ipAddress: l.ipAddress,
+        userAgent: l.userAgent,
+        createdAt: l.createdAt,
+        actor: l.user
+          ? `${l.user.firstName} ${l.user.lastName} (${l.user.email})`
+          : null,
+      };
+    }),
     meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
   });
 });

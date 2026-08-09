@@ -5,6 +5,6 @@ import { notificationSettingsSchema } from "@/validators/settings";
 
 export const PATCH = route(async (req) => {
   const actor = await requirePermission("settings:manage");
-  const input = assertInput(notificationSettingsSchema, await req.json());
+  const input = assertInput(notificationSettingsSchema, await req.json().catch(() => null));
   return ok(await updateNotificationSettings(actor, input));
 });

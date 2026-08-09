@@ -112,7 +112,7 @@ export function OpdQueue() {
           <div class="name">${a.patient.firstName} ${a.patient.lastName}</div>
           <div class="mono">${a.patient.patientNo}</div>
           <div style="margin-top:12px">
-            <div class="line"><span>Date</span><b>${format(new Date(a.date + "T00:00:00"), "MMM d, yyyy")}</b></div>
+            <div class="line"><span>Date</span><b>${format(new Date(a.date), "MMM d, yyyy")}</b></div>
             <div class="line"><span>Time</span><b>${a.startTime}${a.endTime ? ` – ${a.endTime}` : ""}</b></div>
             <div class="line"><span>Doctor</span><b>${a.doctor ? `${a.doctor.user.title ? a.doctor.user.title + " " : ""}${a.doctor.user.firstName} ${a.doctor.user.lastName}` : "Unassigned"}</b></div>
             <div class="line"><span>Department</span><b>${a.department?.name ?? "—"}</b></div>

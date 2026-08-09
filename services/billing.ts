@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
 import { z } from "zod";
-import { logAudit } from "@/services/audit";
 import type {
   createClaimSchema,
   createInvoiceSchema,
@@ -200,30 +199,15 @@ export async function createInvoice(actor: Actor, input: z.infer<typeof createIn
     return created;
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "INVOICE_CREATED",
-    entity: "Invoice",
-    entityId: invoice.id,
-    meta: { invoiceNo, patient: patient.patientNo, subtotal, total: totals.total, items: items.length },
-  });
   return invoice;
 }
 
-export async function cancelInvoice(actor: Actor, id: string) {
+export async function cancelInvoice(_actor: Actor, id: string) {
   const invoice = await db.invoice.findUnique({ where: { id } });
   if (!invoice) throw new ApiError(404, "Invoice not found");
   if (invoice.status === "CANCELLED") throw new ApiError(409, "Invoice already cancelled");
   if (invoice.paid > EPSILON) throw new ApiError(409, "Cannot cancel an invoice with recorded payments");
-  const updated = await db.invoice.update({ where: { id }, data: { status: "CANCELLED" } });
-  await logAudit({
-    userId: actor.userId,
-    action: "INVOICE_CANCELLED",
-    entity: "Invoice",
-    entityId: id,
-    meta: { invoiceNo: invoice.invoiceNo },
-  });
-  return updated;
+  return db.invoice.update({ where: { id }, data: { status: "CANCELLED" } });
 }
 
 // ---------------------------------------------------------------------------
@@ -289,13 +273,6 @@ export async function recordPayment(actor: Actor, input: z.infer<typeof recordPa
     return created;
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "PAYMENT_RECORDED",
-    entity: "Payment",
-    entityId: payment.id,
-    meta: { paymentNo, invoiceNo: invoice.invoiceNo, amount: input.amount, method: input.method },
-  });
   return payment;
 }
 
@@ -354,13 +331,6 @@ export async function refundPayment(actor: Actor, input: z.infer<typeof refundSc
     return refund;
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "PAYMENT_REFUNDED",
-    entity: "Payment",
-    entityId: payment.id,
-    meta: { refundNo, invoiceNo: payment.invoice.invoiceNo, amount: input.amount, reason: input.reason },
-  });
   return result;
 }
 
@@ -409,13 +379,6 @@ export async function createInsuranceCompany(actor: Actor, input: z.infer<typeof
   const company = await db.insuranceCompany.create({
     data: { ...input, code, hospitalId: actor.hospitalId ?? null },
   });
-  await logAudit({
-    userId: actor.userId,
-    action: "INSURANCE_COMPANY_CREATED",
-    entity: "InsuranceCompany",
-    entityId: company.id,
-    meta: { name: company.name, code },
-  });
   return company;
 }
 
@@ -423,13 +386,6 @@ export async function updateInsuranceCompany(actor: Actor, id: string, input: Pa
   const existing = await db.insuranceCompany.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Insurance company not found");
   const company = await db.insuranceCompany.update({ where: { id }, data: input });
-  await logAudit({
-    userId: actor.userId,
-    action: "INSURANCE_COMPANY_UPDATED",
-    entity: "InsuranceCompany",
-    entityId: id,
-    meta: { name: company.name },
-  });
   return company;
 }
 
@@ -469,16 +425,9 @@ export async function createInsurancePolicy(actor: Actor, input: z.infer<typeof 
 
   await db.patient.update({
     where: { id: patient.id },
-    data: { insuranceProvider: company.name, insuranceNumber: input.policyNumber },
+    data: { insuranceProvider: company.name, insuranceNumber: policyNumber },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "INSURANCE_POLICY_CREATED",
-    entity: "InsurancePolicy",
-    entityId: policy.id,
-    meta: { policyNumber, patient: patient.patientNo, company: company.name },
-  });
   return policy;
 }
 
@@ -539,13 +488,6 @@ export async function createClaim(actor: Actor, input: z.infer<typeof createClai
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "INSURANCE_CLAIM_SUBMITTED",
-    entity: "InsuranceClaim",
-    entityId: claim.id,
-    meta: { claimNo, invoiceNo: invoice.invoiceNo, amount: input.amount },
-  });
   return claim;
 }
 
@@ -560,9 +502,8 @@ export async function decideClaim(
     throw new ApiError(409, `Only submitted claims can be decided (current: ${claim.status})`);
   }
 
-  let payment: { id: string; paymentNo: string } | null = null;
   if (decision.status === "APPROVED") {
-    payment = await db.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       const paymentNo = await nextNumber("payment");
       const created = await tx.payment.create({
         data: {
@@ -599,12 +540,5 @@ export async function decideClaim(
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "INSURANCE_CLAIM_DECIDED",
-    entity: "InsuranceClaim",
-    entityId: id,
-    meta: { claimNo: claim.claimNo, decision: decision.status, payout: payment?.paymentNo ?? null },
-  });
   return updated;
 }

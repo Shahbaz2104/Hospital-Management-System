@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
 import type { MedicineInput } from "@/validators/pharmacy";
-import { logAudit } from "@/services/audit";
 
 type Actor = { userId: string; hospitalId?: string | null };
 
@@ -75,41 +74,19 @@ export async function createMedicine(actor: Actor, input: MedicineInput) {
       hospitalId: actor.hospitalId ?? null,
     },
   });
-  await logAudit({
-    userId: actor.userId,
-    action: "MEDICINE_CREATED",
-    entity: "Medicine",
-    entityId: medicine.id,
-    meta: { name: medicine.name },
-  });
   return medicine;
 }
 
 export async function updateMedicine(actor: Actor, id: string, input: Partial<MedicineInput>) {
   const existing = await db.medicine.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Medicine not found");
-  const medicine = await db.medicine.update({ where: { id }, data: input });
-  await logAudit({
-    userId: actor.userId,
-    action: "MEDICINE_UPDATED",
-    entity: "Medicine",
-    entityId: id,
-    meta: { name: medicine.name },
-  });
-  return medicine;
+  return db.medicine.update({ where: { id }, data: input });
 }
 
-export async function deleteMedicine(actor: Actor, id: string) {
+export async function deleteMedicine(_actor: Actor, id: string) {
   const existing = await db.medicine.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Medicine not found");
   await db.medicine.delete({ where: { id } });
-  await logAudit({
-    userId: actor.userId,
-    action: "MEDICINE_DELETED",
-    entity: "Medicine",
-    entityId: id,
-    meta: { name: existing.name },
-  });
   return { deleted: true };
 }
 
@@ -127,13 +104,6 @@ export async function listSuppliers(activeOnly = false) {
 export async function createSupplier(actor: Actor, input: { name: string; contactPerson?: string; phone?: string; email?: string; address?: string; taxId?: string; notes?: string }) {
   const supplier = await db.supplier.create({
     data: { ...input, hospitalId: actor.hospitalId ?? null },
-  });
-  await logAudit({
-    userId: actor.userId,
-    action: "SUPPLIER_CREATED",
-    entity: "Supplier",
-    entityId: supplier.id,
-    meta: { name: supplier.name },
   });
   return supplier;
 }
@@ -183,13 +153,6 @@ export async function createPurchaseOrder(
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "PURCHASE_ORDER_CREATED",
-    entity: "PurchaseOrder",
-    entityId: order.id,
-    meta: { poNo, total, items: input.items.length },
-  });
   return order;
 }
 
@@ -244,13 +207,6 @@ export async function receivePurchaseOrder(actor: Actor, id: string) {
     data: { status: "RECEIVED", receivedAt: new Date() },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "PURCHASE_ORDER_RECEIVED",
-    entity: "PurchaseOrder",
-    entityId: id,
-    meta: { poNo: order.poNo, items: items.length },
-  });
   return updated;
 }
 
@@ -259,13 +215,6 @@ export async function cancelPurchaseOrder(actor: Actor, id: string) {
   if (!order) throw new ApiError(404, "Purchase order not found");
   if (order.status !== "ORDERED") throw new ApiError(409, "Only ordered purchase orders can be cancelled");
   const updated = await db.purchaseOrder.update({ where: { id }, data: { status: "CANCELLED" } });
-  await logAudit({
-    userId: actor.userId,
-    action: "PURCHASE_ORDER_CANCELLED",
-    entity: "PurchaseOrder",
-    entityId: id,
-    meta: { poNo: order.poNo },
-  });
   return updated;
 }
 
@@ -323,13 +272,6 @@ export async function createStockTransaction(
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "STOCK_TRANSACTION_CREATED",
-    entity: "StockTransaction",
-    entityId: tx.id,
-    meta: { txNo, medicine: medicine.name, type: input.type, quantity: signed },
-  });
   return tx;
 }
 
@@ -418,12 +360,5 @@ export async function createSale(
     return created;
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "MEDICINE_SALE_CREATED",
-    entity: "MedicineSale",
-    entityId: sale.id,
-    meta: { saleNo, total, items: input.items.length },
-  });
   return sale;
 }

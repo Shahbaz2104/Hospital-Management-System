@@ -95,18 +95,6 @@ export async function createAdmission(
     return created;
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "PATIENT_ADMITTED",
-    entity: "Admission",
-    entityId: admission.id,
-    meta: {
-      admissionNo,
-      patient: `${patient.firstName} ${patient.lastName}`,
-      bedId: input.bedId ?? null,
-    },
-  });
-
   return admission;
 }
 
@@ -149,14 +137,6 @@ export async function transferAdmission(
       },
     });
   });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "PATIENT_TRANSFERRED",
-    entity: "Admission",
-    entityId: id,
-    meta: { admissionNo: admission.admissionNo, bedId: newBedId },
-  });
 }
 
 export async function dischargeAdmission(actor: Actor, id: string) {
@@ -178,14 +158,6 @@ export async function dischargeAdmission(actor: Actor, id: string) {
       where: { id },
       data: { status: "DISCHARGED", dischargeAt: new Date() },
     });
-  });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "PATIENT_DISCHARGED",
-    entity: "Admission",
-    entityId: id,
-    meta: { admissionNo: admission.admissionNo },
   });
 }
 

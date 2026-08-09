@@ -4,9 +4,11 @@ import { logAudit } from "@/services/audit";
 import { createAdmission, listAdmissions } from "@/services/admissions";
 import { admissionSchema } from "@/validators/admissions";
 
-export const GET = route(async () => {
+export const GET = route(async (req) => {
   await requirePermission("admissions:read");
-  const admissions = await listAdmissions();
+  const url = new URL(req.url);
+  const status = url.searchParams.get("status") ?? undefined;
+  const admissions = await listAdmissions({ status });
   return ok({ items: admissions });
 });
 

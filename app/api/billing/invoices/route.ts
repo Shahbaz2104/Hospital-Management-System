@@ -18,7 +18,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("billing:manage");
-  const input = assertInput(createInvoiceSchema, await req.json());
+  const input = assertInput(createInvoiceSchema, await req.json().catch(() => null));
   const invoice = await createInvoice({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   await logAudit({
     userId: actor.id,

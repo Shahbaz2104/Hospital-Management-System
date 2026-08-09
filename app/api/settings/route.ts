@@ -10,6 +10,6 @@ export const GET = route(async () => {
 
 export const PATCH = route(async (req) => {
   const actor = await requirePermission("settings:manage");
-  const input = assertInput(hospitalSettingsSchema, await req.json());
+  const input = assertInput(hospitalSettingsSchema, await req.json().catch(() => null));
   return ok(await updateHospitalSettings(actor, input));
 });

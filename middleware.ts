@@ -23,9 +23,9 @@ const PUBLIC_PATHS = [
 
 /** Coarse route→role gate (fine-grained permission checks happen server-side). */
 const ROUTE_ROLES: Record<string, RoleKey[]> = {
-  "/patients": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PHARMACIST", "LAB_TECHNICIAN", "ACCOUNTANT"],
+  "/patients": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PHARMACIST", "LAB_TECHNICIAN", "ACCOUNTANT", "PATIENT"],
   "/doctors": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR"],
-  "/appointments": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST"],
+  "/appointments": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PATIENT"],
   "/departments": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "RECEPTIONIST"],
   "/rooms": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "NURSE"],
   "/admissions": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "NURSE", "DOCTOR"],
@@ -45,7 +45,7 @@ const ROUTE_ROLES: Record<string, RoleKey[]> = {
   "/payroll": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "ACCOUNTANT"],
   "/reports": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "ACCOUNTANT", "LAB_TECHNICIAN"],
   "/prescriptions": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "PHARMACIST"],
-  "/records": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE"],
+  "/records": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "PATIENT"],
   "/analytics": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "ACCOUNTANT"],
   "/notifications": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PHARMACIST", "LAB_TECHNICIAN", "ACCOUNTANT"],
   "/settings": ["SUPER_ADMIN", "HOSPITAL_ADMIN"],

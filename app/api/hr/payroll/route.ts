@@ -17,7 +17,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("payroll:manage");
-  const input = assertInput(payrollGenerateSchema, await req.json());
+  const input = assertInput(payrollGenerateSchema, await req.json().catch(() => null));
   const result = await generatePayroll({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   return ok(result, { status: 201 });
 });

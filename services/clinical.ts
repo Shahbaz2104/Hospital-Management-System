@@ -65,18 +65,11 @@ export async function createPatient(actor: Actor, input: PatientInput) {
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "PATIENT_CREATED",
-    entity: "Patient",
-    entityId: patient.id,
-    meta: { patientNo, fullName: `${input.firstName} ${input.lastName}` },
-  });
   return patient;
 }
 
 export async function updatePatient(
-  actor: Actor,
+  _actor: Actor,
   id: string,
   input: Partial<PatientInput>
 ) {
@@ -110,12 +103,6 @@ export async function updatePatient(
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "PATIENT_UPDATED",
-    entity: "Patient",
-    entityId: id,
-  });
   return updated;
 }
 
@@ -212,41 +199,21 @@ export async function createAppointment(actor: Actor, input: AppointmentInput) {
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "APPOINTMENT_CREATED",
-    entity: "Appointment",
-    entityId: appointment.id,
-    meta: {
-      tokenNo,
-      patient: `${patient.firstName} ${patient.lastName}`,
-      date: date.toISOString(),
-    },
-  });
   return appointment;
 }
 
 export async function setAppointmentStatus(
-  actor: Actor,
+  _actor: Actor,
   id: string,
   status: string
 ) {
   const existing = await db.appointment.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Appointment not found");
 
-  const updated = await db.appointment.update({
+  return db.appointment.update({
     where: { id },
     data: { status },
   });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "APPOINTMENT_STATUS_CHANGED",
-    entity: "Appointment",
-    entityId: id,
-    meta: { tokenNo: existing.tokenNo, status },
-  });
-  return updated;
 }
 
 export async function deleteAppointment(actor: Actor, id: string) {

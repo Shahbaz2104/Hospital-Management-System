@@ -48,12 +48,13 @@ export async function notify({
   }
   if (!targetIds.length) return [];
 
-  // Per-user dedupe: skip if an unread notification for the same entity exists.
+  // Per-user dedupe: skip if a notification for the same entity already exists
+  // — regardless of read state, so "mark all read" (or polling) never spawns
+  // duplicates for the same alert.
   const existing = entityId
     ? await db.notification.findMany({
         where: {
           entityId,
-          read: false,
           userId: { in: targetIds },
         },
         select: { userId: true },
@@ -75,8 +76,9 @@ export async function notify({
     })),
   });
 
-  // Best-effort email (no-op when SMTP unset).
-  if (email) {
+  // Best-effort email (no-op when SMTP unset). Only sent when a notification
+  // was actually created — deduped alerts must not re-send email on polling.
+  if (email && created.count > 0) {
     try {
       await sendEmail({
         to: email.to,

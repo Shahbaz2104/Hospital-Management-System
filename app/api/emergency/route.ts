@@ -18,6 +18,6 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("emergency:manage");
-  const input = assertInput(emergencyCaseCreateSchema, await req.json());
+  const input = assertInput(emergencyCaseCreateSchema, await req.json().catch(() => null));
   return ok(await createEmergencyCase(actor, input));
 });

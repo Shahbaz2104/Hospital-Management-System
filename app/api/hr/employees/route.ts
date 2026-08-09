@@ -19,7 +19,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("hr:manage");
-  const input = assertInput(employeeSchema, await req.json());
+  const input = assertInput(employeeSchema, await req.json().catch(() => null));
   const employee = await createEmployee({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   return ok(employee, { status: 201 });
 });

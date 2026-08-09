@@ -28,6 +28,6 @@ export const GET = route(async (req, ctx) => {
 export const PATCH = route(async (req, ctx) => {
   const actor = await requirePermission("prescriptions:manage");
   const { id } = await ctx.params;
-  const input = assertInput(prescriptionStatusSchema, await req.json());
+  const input = assertInput(prescriptionStatusSchema, await req.json().catch(() => null));
   return ok(await updatePrescriptionStatus(actor, id, input.status));
 });

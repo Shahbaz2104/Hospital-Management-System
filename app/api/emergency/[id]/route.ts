@@ -24,6 +24,6 @@ export const GET = route(async (req, ctx) => {
 export const PATCH = route(async (req, ctx) => {
   const actor = await requirePermission("emergency:manage");
   const { id } = await ctx.params;
-  const input = assertInput(emergencyUpdateSchema, await req.json());
+  const input = assertInput(emergencyUpdateSchema, await req.json().catch(() => null));
   return ok(await updateEmergencyCase(actor, id, input));
 });

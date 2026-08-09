@@ -15,7 +15,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("hr:manage");
-  const input = assertInput(performanceReviewSchema, await req.json());
+  const input = assertInput(performanceReviewSchema, await req.json().catch(() => null));
   const review = await createReview({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   return ok(review, { status: 201 });
 });

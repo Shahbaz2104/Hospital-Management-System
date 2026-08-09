@@ -427,7 +427,7 @@ export function PatientDetail() {
                       <div className="w-24">
                         <p className="text-sm font-semibold tabular-nums">{a.startTime}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(a.date + "T00:00:00"), "MMM d, yyyy")}
+                          {format(new Date(a.date), "MMM d, yyyy")}
                         </p>
                       </div>
                       <div className="min-w-40 leading-tight">

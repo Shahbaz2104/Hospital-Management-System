@@ -7,7 +7,7 @@ import { claimDecisionSchema } from "@/validators/billing";
 export const PATCH = route(async (req, ctx) => {
   const actor = await requirePermission("insurance:manage");
   const { id } = await ctx.params;
-  const input = assertInput(claimDecisionSchema, await req.json());
+  const input = assertInput(claimDecisionSchema, await req.json().catch(() => null));
   const claim = await decideClaim({ userId: actor.id, hospitalId: actor.hospitalId }, id, input);
   await logAudit({
     userId: actor.id,

@@ -13,7 +13,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("inventory:manage");
-  const input = assertInput(supplierSchema, await req.json());
+  const input = assertInput(supplierSchema, await req.json().catch(() => null));
   const supplier = await createSupplier({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   await logAudit({
     userId: actor.id,

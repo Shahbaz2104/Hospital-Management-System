@@ -15,7 +15,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("inventory:manage");
-  const input = assertInput(stockTransactionSchema, await req.json());
+  const input = assertInput(stockTransactionSchema, await req.json().catch(() => null));
   const tx = await createStockTransaction({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   await logAudit({
     userId: actor.id,

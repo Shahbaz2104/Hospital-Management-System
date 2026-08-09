@@ -5,7 +5,7 @@ import { payrollMarkPaidSchema } from "@/validators/hr";
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("payroll:manage");
-  const input = assertInput(payrollMarkPaidSchema, await req.json());
+  const input = assertInput(payrollMarkPaidSchema, await req.json().catch(() => null));
   const result = await markPayrollPaid({ userId: actor.id, hospitalId: actor.hospitalId }, input.ids);
   return ok(result);
 });

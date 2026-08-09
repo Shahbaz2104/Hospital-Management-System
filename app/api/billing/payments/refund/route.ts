@@ -6,7 +6,7 @@ import { refundSchema } from "@/validators/billing";
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("payments:manage");
-  const input = assertInput(refundSchema, await req.json());
+  const input = assertInput(refundSchema, await req.json().catch(() => null));
   const refund = await refundPayment({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   await logAudit({
     userId: actor.id,

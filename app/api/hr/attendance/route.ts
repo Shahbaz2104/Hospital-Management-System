@@ -17,7 +17,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("hr:manage");
-  const input = assertInput(attendanceMarkSchema, await req.json());
+  const input = assertInput(attendanceMarkSchema, await req.json().catch(() => null));
   const records = await markAttendance({ userId: actor.id, hospitalId: actor.hospitalId }, input.entries);
   return ok({ count: records.length }, { status: 201 });
 });

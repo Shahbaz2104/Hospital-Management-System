@@ -7,7 +7,7 @@ import { insuranceCompanySchema } from "@/validators/billing";
 export const PATCH = route(async (req, ctx) => {
   const actor = await requirePermission("insurance:manage");
   const { id } = await ctx.params;
-  const input = assertInput(insuranceCompanySchema.partial(), await req.json());
+  const input = assertInput(insuranceCompanySchema.partial(), await req.json().catch(() => null));
   const company = await updateInsuranceCompany({ userId: actor.id, hospitalId: actor.hospitalId }, id, input);
   await logAudit({
     userId: actor.id,

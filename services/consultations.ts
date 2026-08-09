@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
-import { logAudit } from "@/services/audit";
 
 type Actor = { userId: string; hospitalId?: string | null };
 
@@ -67,18 +66,6 @@ export async function createConsultation(
       data: { status: "COMPLETED" },
     });
   }
-
-  await logAudit({
-    userId: actor.userId,
-    action: "CONSULTATION_CREATED",
-    entity: "Consultation",
-    entityId: consultation.id,
-    meta: {
-      consultationNo,
-      patient: `${patient.firstName} ${patient.lastName}`,
-      appointmentId: input.appointmentId ?? null,
-    },
-  });
 
   return consultation;
 }

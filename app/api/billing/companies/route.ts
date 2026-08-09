@@ -11,7 +11,7 @@ export const GET = route(async () => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("insurance:manage");
-  const input = assertInput(insuranceCompanySchema, await req.json());
+  const input = assertInput(insuranceCompanySchema, await req.json().catch(() => null));
   const company = await createInsuranceCompany({ userId: actor.id, hospitalId: actor.hospitalId }, input);
   await logAudit({
     userId: actor.id,

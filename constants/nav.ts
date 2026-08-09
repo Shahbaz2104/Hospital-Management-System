@@ -59,8 +59,8 @@ export const navConfig: NavSection[] = [
       { title: "Admissions", href: "/admissions", icon: ClipboardList, permission: "admissions:read" },
       { title: "Discharges", href: "/discharges", icon: RotateCcw, permission: "discharges:read" },
       { title: "OPD", href: "/opd", icon: ListChecks, permission: "appointments:read" },
-      { title: "Emergency", href: "/emergency", icon: AlarmClock, permission: "admissions:manage" },
-      { title: "Nurses", href: "/nurses", icon: AudioWaveform, permission: "hr:read" },
+      { title: "Emergency", href: "/emergency", icon: AlarmClock, permission: "emergency:read" },
+      { title: "Nurses", href: "/nurses", icon: AudioWaveform, permission: "nurses:read" },
     ],
   },
   {

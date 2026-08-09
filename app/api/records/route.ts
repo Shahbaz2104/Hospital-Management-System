@@ -23,6 +23,6 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("records:manage");
-  const input = assertInput(medicalRecordCreateSchema, await req.json());
+  const input = assertInput(medicalRecordCreateSchema, await req.json().catch(() => null));
   return ok(await createRecord(actor, input));
 });

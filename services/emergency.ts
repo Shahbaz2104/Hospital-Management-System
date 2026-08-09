@@ -38,19 +38,33 @@ export async function listEmergencyCases(opts: { status?: string; triageLevel?: 
       { patient: { lastName: { contains: opts.search } } },
     ];
   }
+
+  // Triage must sort by clinical priority (RED > YELLOW > GREEN > BLACK),
+  // never alphabetically (which would put YELLOW ahead of RED).
+  const TRIAGE_RANK: Record<string, number> = {
+    RED: 1,
+    YELLOW: 2,
+    GREEN: 3,
+    BLACK: 4,
+  };
+
   const [items, total, activeCounts] = await Promise.all([
     db.emergencyCase.findMany({
       where,
       include: listInclude,
-      orderBy: [
-        { triageLevel: "desc" },
-        { createdAt: "asc" },
-      ],
+      orderBy: [{ createdAt: "asc" }],
       take: 100,
     }),
     db.emergencyCase.count({ where }),
     db.emergencyCase.groupBy({ by: ["status"], _count: { _all: true } }),
   ]);
+
+  items.sort(
+    (a, b) =>
+      (TRIAGE_RANK[a.triageLevel] ?? 9) - (TRIAGE_RANK[b.triageLevel] ?? 9) ||
+      a.createdAt.getTime() - b.createdAt.getTime()
+  );
+
   return {
     items,
     total,

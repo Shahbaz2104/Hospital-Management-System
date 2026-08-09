@@ -17,7 +17,7 @@ export const GET = route(async (req) => {
 
 export const POST = route(async (req) => {
   const actor = await requirePermission("prescriptions:create");
-  const input = assertInput(prescriptionCreateSchema, await req.json());
+  const input = assertInput(prescriptionCreateSchema, await req.json().catch(() => null));
   const prescription = await createPrescription(actor, input);
   await notifyPharmacyOfPrescription(prescription);
   return ok(prescription);

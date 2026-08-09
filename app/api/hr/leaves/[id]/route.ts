@@ -6,7 +6,7 @@ import { leaveDecisionSchema } from "@/validators/hr";
 export const PATCH = route(async (req, ctx) => {
   const actor = await requirePermission("hr:manage");
   const { id } = await ctx.params;
-  const input = assertInput(leaveDecisionSchema, await req.json());
+  const input = assertInput(leaveDecisionSchema, await req.json().catch(() => null));
   const leave = await decideLeave({ userId: actor.id, hospitalId: actor.hospitalId }, id, input);
   return ok(leave);
 });

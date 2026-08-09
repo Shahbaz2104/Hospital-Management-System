@@ -16,7 +16,7 @@ export const GET = route(async (req, ctx) => {
 export const PATCH = route(async (req, ctx) => {
   const actor = await requirePermission("pharmacy:manage");
   const { id } = await ctx.params;
-  const input = assertInput(medicineSchema.partial(), await req.json());
+  const input = assertInput(medicineSchema.partial(), await req.json().catch(() => null));
   const medicine = await updateMedicine({ userId: actor.id, hospitalId: actor.hospitalId }, id, input);
   await logAudit({
     userId: actor.id,

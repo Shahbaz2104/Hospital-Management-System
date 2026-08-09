@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
-import { logAudit } from "@/services/audit";
 
 type Actor = { userId: string; hospitalId?: string | null };
 
@@ -50,13 +49,6 @@ export async function createLabTest(actor: Actor, input: {
       description: input.description ?? null,
       hospitalId: actor.hospitalId ?? null,
     },
-  });
-  await logAudit({
-    userId: actor.userId,
-    action: "LAB_TEST_CREATED",
-    entity: "LabTest",
-    entityId: test.id,
-    meta: { code: test.code, name: test.name },
   });
   return test;
 }
@@ -118,18 +110,11 @@ export async function createLabOrder(
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "LAB_ORDER_CREATED",
-    entity: "LabOrder",
-    entityId: order.id,
-    meta: { orderNo, tests: tests.map((t) => t.code).join(", ") },
-  });
   return order;
 }
 
 export async function updateLabOrderStatus(
-  actor: Actor,
+  _actor: Actor,
   id: string,
   status: string
 ) {
@@ -140,20 +125,11 @@ export async function updateLabOrderStatus(
   if (status === "SAMPLE_COLLECTED") data.sampleCollectedAt = new Date();
   if (status === "COMPLETED") data.completedAt = new Date();
 
-  const updated = await db.labOrder.update({ where: { id }, data });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "LAB_ORDER_STATUS_CHANGED",
-    entity: "LabOrder",
-    entityId: id,
-    meta: { orderNo: order.orderNo, status },
-  });
-  return updated;
+  return db.labOrder.update({ where: { id }, data });
 }
 
 export async function submitLabResults(
-  actor: Actor,
+  _actor: Actor,
   id: string,
   results: { testId: string; name: string; value: string; unit?: string; normalRange?: string; flag?: string }[]
 ) {
@@ -162,6 +138,11 @@ export async function submitLabResults(
   if (order.status === "CANCELLED") throw new ApiError(409, "Cancelled orders cannot take results");
 
   const tests = JSON.parse(order.tests) as { testId: string; name: string; unit: string | null; normalRange: string | null }[];
+  const orderedIds = new Set(tests.map((t) => t.testId));
+  const unknown = results.filter((r) => !orderedIds.has(r.testId));
+  if (unknown.length > 0) {
+    throw new ApiError(400, `Result includes tests not on this order: ${unknown.map((r) => r.name).join(", ")}`);
+  }
   const enriched = results.map((r) => {
     const t = tests.find((x) => x.testId === r.testId);
     return {
@@ -171,19 +152,10 @@ export async function submitLabResults(
     };
   });
 
-  const updated = await db.labOrder.update({
+  return db.labOrder.update({
     where: { id },
     data: { results: JSON.stringify(enriched), status: "COMPLETED", completedAt: new Date() },
   });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "LAB_RESULTS_SUBMITTED",
-    entity: "LabOrder",
-    entityId: id,
-    meta: { orderNo: order.orderNo, results: enriched.length },
-  });
-  return updated;
 }
 
 // ---------------------------------------------------------------------------
@@ -231,38 +203,22 @@ export async function createRadiologyOrder(
     },
   });
 
-  await logAudit({
-    userId: actor.userId,
-    action: "RADIOLOGY_ORDER_CREATED",
-    entity: "RadiologyOrder",
-    entityId: order.id,
-    meta: { orderNo, modality: input.modality, bodyPart: input.bodyPart ?? null },
-  });
   return order;
 }
 
 export async function updateRadiologyOrderStatus(
-  actor: Actor,
+  _actor: Actor,
   id: string,
   status: string
 ) {
   const order = await db.radiologyOrder.findUnique({ where: { id } });
   if (!order) throw new ApiError(404, "Radiology order not found");
 
-  const updated = await db.radiologyOrder.update({ where: { id }, data: { status } });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "RADIOLOGY_ORDER_STATUS_CHANGED",
-    entity: "RadiologyOrder",
-    entityId: id,
-    meta: { orderNo: order.orderNo, status },
-  });
-  return updated;
+  return db.radiologyOrder.update({ where: { id }, data: { status } });
 }
 
 export async function submitRadiologyReport(
-  actor: Actor,
+  _actor: Actor,
   id: string,
   input: { findings: string; reports?: { name: string; url: string }[] }
 ) {
@@ -276,7 +232,7 @@ export async function submitRadiologyReport(
     ...(input.reports ?? []).map((r) => ({ ...r, uploadedAt: now })),
   ];
 
-  const updated = await db.radiologyOrder.update({
+  return db.radiologyOrder.update({
     where: { id },
     data: {
       findings: input.findings,
@@ -284,13 +240,4 @@ export async function submitRadiologyReport(
       status: "COMPLETED",
     },
   });
-
-  await logAudit({
-    userId: actor.userId,
-    action: "RADIOLOGY_REPORT_SUBMITTED",
-    entity: "RadiologyOrder",
-    entityId: id,
-    meta: { orderNo: order.orderNo },
-  });
-  return updated;
 }
