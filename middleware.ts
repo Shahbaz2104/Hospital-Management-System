@@ -76,6 +76,8 @@ export async function middleware(req: NextRequest) {
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const isApi = pathname.startsWith("/api");
   const isAuthApi = pathname.startsWith("/api/auth");
+  // Public by design: anonymous QR verification of prescription PDFs.
+  const isPublicApi = pathname === "/api/prescriptions/verify";
 
   const accessToken = req.cookies.get("hms_access")?.value;
   const refreshToken = req.cookies.get("hms_refresh")?.value;
@@ -83,7 +85,7 @@ export async function middleware(req: NextRequest) {
 
   // ---- API: let route guards handle auth; block unknown origins on state-changing calls.
   if (isApi) {
-    if (isAuthApi) return NextResponse.next();
+    if (isAuthApi || isPublicApi) return NextResponse.next();
     if (!payload && !refreshToken) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }

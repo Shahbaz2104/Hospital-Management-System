@@ -19,6 +19,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const SETTINGS_ROLES = new Set(["SUPER_ADMIN", "HOSPITAL_ADMIN"]);
+
 export function UserMenu({ user }: { user: SessionUser }) {
   const router = useRouter();
   const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`;
@@ -75,9 +77,11 @@ export function UserMenu({ user }: { user: SessionUser }) {
         <DropdownMenuItem onClick={() => router.push("/profile")}>
           <UserRound className="size-4" /> Profile
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/settings")}>
-          <Settings className="size-4" /> Settings
-        </DropdownMenuItem>
+        {SETTINGS_ROLES.has(user.roleName) && (
+          <DropdownMenuItem onClick={() => router.push("/settings")}>
+            <Settings className="size-4" /> Settings
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={logout}

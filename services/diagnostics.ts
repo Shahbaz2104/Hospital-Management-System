@@ -1,24 +1,15 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { nextSeq } from "@/lib/sequences";
 
 type Actor = { userId: string; hospitalId?: string | null };
 
 async function nextLabOrderNo(): Promise<string> {
-  const last = await db.labOrder.findFirst({
-    orderBy: { orderNo: "desc" },
-    select: { orderNo: true },
-  });
-  const n = last ? parseInt(last.orderNo.replace(/\D+/g, ""), 10) || 0 : 0;
-  return `LAB-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.labOrder.findMany({ select: { orderNo: true } }), "orderNo", "LAB");
 }
 
 async function nextRadiologyOrderNo(): Promise<string> {
-  const last = await db.radiologyOrder.findFirst({
-    orderBy: { orderNo: "desc" },
-    select: { orderNo: true },
-  });
-  const n = last ? parseInt(last.orderNo.replace(/\D+/g, ""), 10) || 0 : 0;
-  return `RAD-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.radiologyOrder.findMany({ select: { orderNo: true } }), "orderNo", "RAD");
 }
 
 // ---------------------------------------------------------------------------

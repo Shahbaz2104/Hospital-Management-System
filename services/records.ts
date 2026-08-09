@@ -1,14 +1,10 @@
 import { db } from "@/lib/db";
+import { nextSeq } from "@/lib/sequences";
 import { logAudit } from "@/services/audit";
 import type { MedicalRecordCreateInput } from "@/validators/records";
 
 async function nextRecordNo(): Promise<string> {
-  const last = await db.medicalRecord.findFirst({
-    orderBy: { recordNo: "desc" },
-    select: { recordNo: true },
-  });
-  const n = last ? parseInt(String(last.recordNo).replace(/\D+/g, ""), 10) || 0 : 0;
-  return `MR-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.medicalRecord.findMany({ select: { recordNo: true } }), "recordNo", "MR");
 }
 
 export async function listRecords(opts: { patientId?: string; type?: string; search?: string }) {

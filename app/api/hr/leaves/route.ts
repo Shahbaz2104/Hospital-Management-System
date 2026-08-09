@@ -4,12 +4,13 @@ import { createLeave, listLeaves } from "@/services/hr";
 import { leaveSchema } from "@/validators/hr";
 
 export const GET = route(async (req) => {
-  await requirePermission("hr:read");
+  const actor = await requirePermission("hr:read");
   const url = new URL(req.url);
   return ok(
     await listLeaves({
       status: url.searchParams.get("status")?.trim() || undefined,
       search: url.searchParams.get("search")?.trim() || undefined,
+      hospitalId: actor.hospitalId,
     })
   );
 });

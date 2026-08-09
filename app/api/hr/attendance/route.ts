@@ -4,13 +4,14 @@ import { listAttendance, markAttendance } from "@/services/hr";
 import { attendanceMarkSchema } from "@/validators/hr";
 
 export const GET = route(async (req) => {
-  await requirePermission("hr:read");
+  const actor = await requirePermission("hr:read");
   const url = new URL(req.url);
   return ok(
     await listAttendance({
       month: url.searchParams.get("month")?.trim() || undefined,
       date: url.searchParams.get("date")?.trim() || undefined,
       employeeId: url.searchParams.get("employeeId")?.trim() || undefined,
+      hospitalId: actor.hospitalId,
     })
   );
 });

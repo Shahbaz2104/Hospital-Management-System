@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { nextSeq } from "@/lib/sequences";
 import { z } from "zod";
 import type {
   createClaimSchema,
@@ -15,21 +16,11 @@ type Actor = { userId: string; hospitalId?: string | null };
 const EPSILON = 0.009;
 
 async function nextNumber(kind: "invoice" | "payment" | "claim" | "policy" | "company"): Promise<string> {
-  let last: string | null = null;
-  if (kind === "invoice") {
-    last = (await db.invoice.findFirst({ orderBy: { invoiceNo: "desc" }, select: { invoiceNo: true } }))?.invoiceNo ?? null;
-  } else if (kind === "payment") {
-    last = (await db.payment.findFirst({ orderBy: { paymentNo: "desc" }, select: { paymentNo: true } }))?.paymentNo ?? null;
-  } else if (kind === "claim") {
-    last = (await db.insuranceClaim.findFirst({ orderBy: { claimNo: "desc" }, select: { claimNo: true } }))?.claimNo ?? null;
-  } else if (kind === "policy") {
-    last = (await db.insurancePolicy.findFirst({ orderBy: { policyNumber: "desc" }, select: { policyNumber: true } }))?.policyNumber ?? null;
-  } else {
-    last = (await db.insuranceCompany.findFirst({ orderBy: { code: "desc" }, select: { code: true } }))?.code ?? null;
-  }
-  const n = last ? parseInt(String(last).replace(/\D+/g, ""), 10) || 0 : 0;
-  const prefix = kind === "invoice" ? "INV" : kind === "payment" ? "PAY" : kind === "claim" ? "CLM" : kind === "policy" ? "POL" : "IC";
-  return `${prefix}-${String(n + 1).padStart(4, "0")}`;
+  if (kind === "invoice") return nextSeq(() => db.invoice.findMany({ select: { invoiceNo: true } }), "invoiceNo", "INV");
+  if (kind === "payment") return nextSeq(() => db.payment.findMany({ select: { paymentNo: true } }), "paymentNo", "PAY");
+  if (kind === "claim") return nextSeq(() => db.insuranceClaim.findMany({ select: { claimNo: true } }), "claimNo", "CLM");
+  if (kind === "policy") return nextSeq(() => db.insurancePolicy.findMany({ select: { policyNumber: true } }), "policyNumber", "POL");
+  return nextSeq(() => db.insuranceCompany.findMany({ select: { code: true } }), "code", "IC");
 }
 
 // ---------------------------------------------------------------------------

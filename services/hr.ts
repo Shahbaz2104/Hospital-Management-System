@@ -4,6 +4,7 @@ import { z } from "zod";
 import { hashPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { nextSeq } from "@/lib/sequences";
 import { logAudit } from "@/services/audit";
 import type {
   attendanceMarkSchema,
@@ -20,13 +21,8 @@ type Actor = { userId: string; hospitalId?: string | null };
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 async function nextNumber(kind: "employee" | "leave"): Promise<string> {
-  const last =
-    kind === "employee"
-      ? (await db.employee.findFirst({ orderBy: { employeeNo: "desc" }, select: { employeeNo: true } }))?.employeeNo ?? null
-      : (await db.leave.findFirst({ orderBy: { leaveNo: "desc" }, select: { leaveNo: true } }))?.leaveNo ?? null;
-  const n = last ? parseInt(String(last).replace(/\D+/g, ""), 10) || 0 : 0;
-  const prefix = kind === "employee" ? "EMP" : "LV";
-  return `${prefix}-${String(n + 1).padStart(4, "0")}`;
+  if (kind === "employee") return nextSeq(() => db.employee.findMany({ select: { employeeNo: true } }), "employeeNo", "EMP");
+  return nextSeq(() => db.leave.findMany({ select: { leaveNo: true } }), "leaveNo", "LV");
 }
 
 // ---------------------------------------------------------------------------
@@ -39,9 +35,10 @@ const employeeInclude = {
 } as const;
 
 export async function listEmployees(
-  filters: { search?: string; departmentId?: string; status?: string; page?: number; pageSize?: number } = {}
+  filters: { search?: string; departmentId?: string; status?: string; page?: number; pageSize?: number; hospitalId?: string | null } = {}
 ) {
   const where: Record<string, unknown> = {};
+  if (filters.hospitalId) where.hospitalId = filters.hospitalId;
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   if (filters.departmentId && filters.departmentId !== "ALL") where.departmentId = filters.departmentId;
   if (filters.search) {
@@ -208,8 +205,9 @@ export async function deleteEmployee(actor: Actor, id: string) {
 // Attendance
 // ---------------------------------------------------------------------------
 
-export async function listAttendance(filters: { month?: string; employeeId?: string; date?: string } = {}) {
+export async function listAttendance(filters: { month?: string; employeeId?: string; date?: string; hospitalId?: string | null } = {}) {
   const where: Record<string, unknown> = {};
+  if (filters.hospitalId) where.hospitalId = filters.hospitalId;
   if (filters.month) where.date = { startsWith: filters.month };
   if (filters.date) where.date = filters.date;
   if (filters.employeeId) where.employeeId = filters.employeeId;
@@ -257,10 +255,10 @@ export async function markAttendance(actor: Actor, entries: z.infer<typeof atten
   return results;
 }
 
-export async function attendanceStats(month: string) {
+export async function attendanceStats(month: string, hospitalId?: string | null) {
   const rows = await db.attendance.groupBy({
     by: ["employeeId", "status"],
-    where: { date: { startsWith: month } },
+    where: { date: { startsWith: month }, ...(hospitalId ? { hospitalId } : {}) },
     _count: { _all: true },
   });
 
@@ -297,8 +295,9 @@ const leaveInclude = {
   approver: { select: { firstName: true, lastName: true } },
 } as const;
 
-export async function listLeaves(filters: { status?: string; search?: string } = {}) {
+export async function listLeaves(filters: { status?: string; search?: string; hospitalId?: string | null } = {}) {
   const where: Record<string, unknown> = {};
+  if (filters.hospitalId) where.hospitalId = filters.hospitalId;
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   if (filters.search) {
     where.OR = [
@@ -375,8 +374,9 @@ export async function decideLeave(actor: Actor, id: string, input: z.infer<typeo
 // Performance reviews
 // ---------------------------------------------------------------------------
 
-export async function listReviews(filters: { employeeId?: string } = {}) {
+export async function listReviews(filters: { employeeId?: string; hospitalId?: string | null } = {}) {
   const where: Record<string, unknown> = {};
+  if (filters.hospitalId) where.hospitalId = filters.hospitalId;
   if (filters.employeeId) where.employeeId = filters.employeeId;
 
   return db.performanceReview.findMany({
@@ -486,8 +486,9 @@ export async function generatePayroll(actor: Actor, input: z.infer<typeof payrol
   return { month: input.month, created, skipped: existingIds.size };
 }
 
-export async function listPayroll(filters: { month?: string; status?: string; search?: string } = {}) {
+export async function listPayroll(filters: { month?: string; status?: string; search?: string; hospitalId?: string | null } = {}) {
   const where: Record<string, unknown> = {};
+  if (filters.hospitalId) where.hospitalId = filters.hospitalId;
   if (filters.month && filters.month !== "ALL") where.month = filters.month;
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   if (filters.search) {
@@ -507,10 +508,10 @@ export async function listPayroll(filters: { month?: string; status?: string; se
   return items;
 }
 
-export async function payrollStats(month: string) {
+export async function payrollStats(month: string, hospitalId?: string | null) {
   const rows = await db.payroll.groupBy({
     by: ["status"],
-    where: { month },
+    where: { month, ...(hospitalId ? { hospitalId } : {}) },
     _count: { _all: true },
     _sum: { netPay: true },
   });

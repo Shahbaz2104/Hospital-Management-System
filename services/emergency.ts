@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { nextSeq } from "@/lib/sequences";
 import { logAudit } from "@/services/audit";
 import { notify } from "@/services/notifications";
 import type {
@@ -10,12 +11,7 @@ import type {
 } from "@/validators/emergency";
 
 async function nextCaseNo(): Promise<string> {
-  const last = await db.emergencyCase.findFirst({
-    orderBy: { caseNo: "desc" },
-    select: { caseNo: true },
-  });
-  const n = last ? parseInt(String(last.caseNo).replace(/\D+/g, ""), 10) || 0 : 0;
-  return `ER-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.emergencyCase.findMany({ select: { caseNo: true } }), "caseNo", "ER");
 }
 
 const listInclude = {

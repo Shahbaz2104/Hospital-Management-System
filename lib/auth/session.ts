@@ -74,7 +74,7 @@ async function loadUserWithPermissions(userId: string): Promise<SessionUser | nu
 
   if (!user || user.status !== "ACTIVE") return null;
 
-  const keys = user.role.rolePermissions.map((rp) => rp.permission.key);
+  const keys = user.role ? user.role.rolePermissions.map((rp) => rp.permission.key) : [];
 
   return {
     id: user.id,
@@ -85,8 +85,8 @@ async function loadUserWithPermissions(userId: string): Promise<SessionUser | nu
     avatarUrl: user.avatarUrl,
     phone: user.phone,
     roleId: user.roleId,
-    roleName: user.role.name,
-    roleLabel: user.role.label,
+    roleName: user.role?.name ?? "UNASSIGNED",
+    roleLabel: user.role?.label ?? "Unassigned",
     hospitalId: user.hospitalId,
     permissions: keys as PermissionKey[],
   };

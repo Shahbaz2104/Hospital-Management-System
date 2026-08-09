@@ -1,15 +1,11 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { nextSeq } from "@/lib/sequences";
 
 type Actor = { userId: string; hospitalId?: string | null };
 
 async function nextConsultationNo(): Promise<string> {
-  const last = await db.consultation.findFirst({
-    orderBy: { consultationNo: "desc" },
-    select: { consultationNo: true },
-  });
-  const n = last ? parseInt(last.consultationNo.replace(/\D+/g, ""), 10) || 0 : 0;
-  return `OPD-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.consultation.findMany({ select: { consultationNo: true } }), "consultationNo", "OPD");
 }
 
 export async function createConsultation(

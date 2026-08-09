@@ -3,17 +3,14 @@ import QRCode from "qrcode";
 
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { signHmac } from "@/lib/auth/secrets";
+import { nextSeq } from "@/lib/sequences";
 import { logAudit } from "@/services/audit";
 import { notify } from "@/services/notifications";
 import type { PrescriptionCreateInput } from "@/validators/prescriptions";
 
 async function nextPrescriptionNo(): Promise<string> {
-  const last = await db.prescription.findFirst({
-    orderBy: { prescriptionNo: "desc" },
-    select: { prescriptionNo: true },
-  });
-  const n = last ? parseInt(String(last.prescriptionNo).replace(/\D+/g, ""), 10) || 0 : 0;
-  return `RX-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.prescription.findMany({ select: { prescriptionNo: true } }), "prescriptionNo", "RX");
 }
 
 const detailInclude = {
@@ -220,11 +217,14 @@ export async function renderPrescriptionPdf(
     y -= 24;
   }
 
-  // QR verification code.
+  // QR verification code. Signed so the payload cannot be forged: an attacker
+  // who copies a QR cannot mint new "verified" prescriptions.
+  const signature = await signHmac(`${prescription.id}:${prescription.prescriptionNo}`);
   const qrPayload = JSON.stringify({
     v: 1,
     rx: prescription.prescriptionNo,
     id: prescription.id,
+    s: signature,
   });
   const qrDataUrl = await QRCode.toDataURL(qrPayload, { width: 160, errorCorrectionLevel: "M" });
   const qrImage = await doc.embedPng(qrDataUrl.replace(/^data:image\/png;base64,/, ""));
@@ -242,13 +242,17 @@ export async function renderPrescriptionPdf(
 }
 
 export async function verifyPrescriptionQr(payload: string) {
-  let parsed: { v?: number; rx?: string; id?: string };
+  let parsed: { v?: number; rx?: string; id?: string; s?: string };
   try {
     parsed = JSON.parse(payload);
   } catch {
     throw new ApiError(400, "Invalid QR payload");
   }
-  if (!parsed?.rx || !parsed.id) throw new ApiError(400, "Invalid QR payload");
+  if (!parsed?.rx || !parsed.id || !parsed.s) throw new ApiError(400, "Invalid QR payload");
+
+  const expected = await signHmac(`${parsed.id}:${parsed.rx}`);
+  if (parsed.s !== expected) throw new ApiError(400, "Invalid QR payload");
+
   const prescription = await db.prescription.findUnique({
     where: { id: parsed.id },
     include: {

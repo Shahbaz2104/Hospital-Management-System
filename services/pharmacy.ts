@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { nextSeq } from "@/lib/sequences";
 import type { MedicineInput } from "@/validators/pharmacy";
 
 type Actor = { userId: string; hospitalId?: string | null };
@@ -21,29 +22,9 @@ export function expiryStatus(medicine: { expiryDate: Date | null | undefined }) 
 }
 
 async function nextNumber(kind: "po" | "tx" | "sale"): Promise<string> {
-  let last: string | null = null;
-  if (kind === "po") {
-    last =
-      (await db.purchaseOrder.findFirst({
-        orderBy: { poNo: "desc" },
-        select: { poNo: true },
-      }))?.poNo ?? null;
-  } else if (kind === "tx") {
-    last =
-      (await db.stockTransaction.findFirst({
-        orderBy: { txNo: "desc" },
-        select: { txNo: true },
-      }))?.txNo ?? null;
-  } else {
-    last =
-      (await db.medicineSale.findFirst({
-        orderBy: { saleNo: "desc" },
-        select: { saleNo: true },
-      }))?.saleNo ?? null;
-  }
-  const n = last ? parseInt(last.replace(/\D+/g, ""), 10) || 0 : 0;
-  const prefix = kind === "po" ? "PO" : kind === "tx" ? "ST" : "SALE";
-  return `${prefix}-${String(n + 1).padStart(4, "0")}`;
+  if (kind === "po") return nextSeq(() => db.purchaseOrder.findMany({ select: { poNo: true } }), "poNo", "PO");
+  if (kind === "tx") return nextSeq(() => db.stockTransaction.findMany({ select: { txNo: true } }), "txNo", "ST");
+  return nextSeq(() => db.medicineSale.findMany({ select: { saleNo: true } }), "saleNo", "SALE");
 }
 
 // ---------------------------------------------------------------------------
@@ -53,6 +34,7 @@ async function nextNumber(kind: "po" | "tx" | "sale"): Promise<string> {
 export async function listMedicines(filters: { category?: string; status?: string; search?: string } = {}) {
   const where: Record<string, unknown> = {};
   if (filters.category && filters.category !== "ALL") where.category = filters.category;
+  if (filters.status && filters.status !== "ALL") where.status = filters.status;
   if (filters.search) where.name = { contains: filters.search, mode: "insensitive" };
 
   const medicines = await db.medicine.findMany({

@@ -25,6 +25,12 @@ export async function issueSession({
   userAgent?: string;
 }) {
   const plainToken = randomBytes(48).toString("base64url");
+  // Single-session policy: a fresh login/registration invalidates any other
+  // active sessions for this user.
+  await db.refreshToken.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
   await db.refreshToken.create({
     data: {
       userId,

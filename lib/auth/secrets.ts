@@ -50,3 +50,24 @@ export async function resolveJwtSecrets(): Promise<{
   };
   return cached;
 }
+
+/**
+ * Short HMAC-SHA256 signature (32 chars, URL/base64-safe) for content that
+ * must be verifiable without a session (e.g. prescription QR payloads).
+ * Keys off the access secret so signatures survive cold starts/redeploys.
+ */
+export async function signHmac(input: string): Promise<string> {
+  const { access } = await resolveJwtSecrets();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(access),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(input));
+  const bytes = new Uint8Array(digest);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/[^a-zA-Z0-9]/g, "").slice(0, 32);
+}

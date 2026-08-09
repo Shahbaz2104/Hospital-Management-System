@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { nextSeq } from "@/lib/sequences";
 import type { EquipmentInput } from "@/validators/pharmacy";
 
 type Actor = { userId: string; hospitalId?: string | null };
@@ -23,12 +24,7 @@ export function maintenanceStatus(equipment: { nextMaintenance: Date | null | un
 }
 
 async function nextEquipmentCode(): Promise<string> {
-  const last = await db.medicalEquipment.findFirst({
-    orderBy: { code: "desc" },
-    select: { code: true },
-  });
-  const n = last ? parseInt(last.code.replace(/\D+/g, ""), 10) || 0 : 0;
-  return `EQ-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.medicalEquipment.findMany({ select: { code: true } }), "code", "EQ");
 }
 
 export async function listEquipment(filters: { status?: string; category?: string } = {}) {

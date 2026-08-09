@@ -5,6 +5,17 @@ import { logAudit } from "@/services/audit";
 import { deleteDepartment, updateDepartment } from "@/services/master-data";
 import { departmentSchema } from "@/validators/master-data";
 
+export const GET = route(async (req, ctx) => {
+  await requirePermission("departments:read");
+  const { id } = await ctx.params;
+  const dept = await db.department.findUnique({
+    where: { id },
+    include: { headDoctor: { include: { user: { select: { firstName: true, lastName: true, title: true } } } } },
+  });
+  if (!dept) throw new ApiError(404, "Department not found");
+  return ok(dept);
+});
+
 export const PATCH = route(async (req: Request, ctx) => {
   const actor = await requirePermission("departments:manage");
   const { id } = await ctx.params;

@@ -4,7 +4,7 @@ import { createEmployee, listEmployees } from "@/services/hr";
 import { employeeSchema } from "@/validators/hr";
 
 export const GET = route(async (req) => {
-  await requirePermission("hr:read");
+  const actor = await requirePermission("hr:read");
   const url = new URL(req.url);
   return ok(
     await listEmployees({
@@ -13,6 +13,7 @@ export const GET = route(async (req) => {
       status: url.searchParams.get("status")?.trim() ?? undefined,
       page: Number(url.searchParams.get("page")) || 1,
       pageSize: Number(url.searchParams.get("pageSize")) || 20,
+      hospitalId: actor.hospitalId,
     })
   );
 });

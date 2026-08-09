@@ -4,13 +4,14 @@ import { generatePayroll, listPayroll } from "@/services/hr";
 import { payrollGenerateSchema } from "@/validators/hr";
 
 export const GET = route(async (req) => {
-  await requirePermission("payroll:read");
+  const actor = await requirePermission("payroll:read");
   const url = new URL(req.url);
   return ok(
     await listPayroll({
       month: url.searchParams.get("month")?.trim() || undefined,
       status: url.searchParams.get("status")?.trim() || undefined,
       search: url.searchParams.get("search")?.trim() || undefined,
+      hospitalId: actor.hospitalId,
     })
   );
 });

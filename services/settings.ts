@@ -28,8 +28,16 @@ async function upsertSettings(hospitalId: string, key: SettingsKey, value: strin
   });
 }
 
-export async function getSettingsOverview() {
-  const hospital = await db.hospital.findFirst({ orderBy: { createdAt: "asc" } });
+async function resolveHospital(hospitalId?: string | null) {
+  if (hospitalId) {
+    const hospital = await db.hospital.findUnique({ where: { id: hospitalId } });
+    if (hospital) return hospital;
+  }
+  return db.hospital.findFirst({ orderBy: { createdAt: "asc" } });
+}
+
+export async function getSettingsOverview(actor?: { id: string; hospitalId?: string | null }) {
+  const hospital = await resolveHospital(actor?.hospitalId);
   if (!hospital) throw new ApiError(404, "Hospital not found");
   const settings = await getSettings(hospital.id);
 
@@ -71,8 +79,8 @@ export async function getSettingsOverview() {
   };
 }
 
-export async function updateHospitalSettings(actor: { id: string }, input: HospitalSettingsInput) {
-  const hospital = await db.hospital.findFirst({ orderBy: { createdAt: "asc" } });
+export async function updateHospitalSettings(actor: { id: string; hospitalId?: string | null }, input: HospitalSettingsInput) {
+  const hospital = await resolveHospital(actor.hospitalId);
   if (!hospital) throw new ApiError(404, "Hospital not found");
   const updated = await db.hospital.update({
     where: { id: hospital.id },
@@ -96,8 +104,8 @@ export async function updateHospitalSettings(actor: { id: string }, input: Hospi
   return updated;
 }
 
-export async function updateSmtpSettings(actor: { id: string }, input: SmtpSettingsInput) {
-  const hospital = await db.hospital.findFirst({ orderBy: { createdAt: "asc" } });
+export async function updateSmtpSettings(actor: { id: string; hospitalId?: string | null }, input: SmtpSettingsInput) {
+  const hospital = await resolveHospital(actor.hospitalId);
   if (!hospital) throw new ApiError(404, "Hospital not found");
   const updates = [
     upsertSettings(hospital.id, "smtp.host", input.host),
@@ -115,8 +123,8 @@ export async function updateSmtpSettings(actor: { id: string }, input: SmtpSetti
   return { ok: true };
 }
 
-export async function updateNotificationSettings(actor: { id: string }, input: NotificationSettingsInput) {
-  const hospital = await db.hospital.findFirst({ orderBy: { createdAt: "asc" } });
+export async function updateNotificationSettings(actor: { id: string; hospitalId?: string | null }, input: NotificationSettingsInput) {
+  const hospital = await resolveHospital(actor.hospitalId);
   if (!hospital) throw new ApiError(404, "Hospital not found");
   await Promise.all([
     upsertSettings(hospital.id, "notify.lowStockThreshold", String(input.lowStockThreshold)),

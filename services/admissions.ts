@@ -1,16 +1,12 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { nextSeq } from "@/lib/sequences";
 import { logAudit } from "@/services/audit";
 
 type Actor = { userId: string; hospitalId?: string | null };
 
 async function nextAdmissionNo(): Promise<string> {
-  const last = await db.admission.findFirst({
-    orderBy: { admissionNo: "desc" },
-    select: { admissionNo: true },
-  });
-  const n = last ? parseInt(last.admissionNo.replace(/\D+/g, ""), 10) || 0 : 0;
-  return `IPD-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.admission.findMany({ select: { admissionNo: true } }), "admissionNo", "IPD");
 }
 
 export async function listAdmissions(filters: { status?: string } = {}) {

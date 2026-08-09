@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
+import { nextSeq } from "@/lib/sequences";
 import { logAudit } from "@/services/audit";
 import type { AppointmentInput, PatientInput } from "@/validators/clinical";
 
@@ -10,12 +11,7 @@ type Actor = { userId: string; hospitalId?: string | null };
 // ---------------------------------------------------------------------------
 
 async function nextPatientNo(): Promise<string> {
-  const last = await db.patient.findFirst({
-    orderBy: { patientNo: "desc" },
-    select: { patientNo: true },
-  });
-  const n = last ? parseInt(last.patientNo.replace(/\D+/g, ""), 10) || 0 : 0;
-  return `PT-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.patient.findMany({ select: { patientNo: true } }), "patientNo", "PT");
 }
 
 export async function listPatients(search = "") {
@@ -125,12 +121,7 @@ export async function deletePatient(actor: Actor, id: string) {
 // ---------------------------------------------------------------------------
 
 async function nextToken() {
-  const last = await db.appointment.findFirst({
-    orderBy: { tokenNo: "desc" },
-    select: { tokenNo: true },
-  });
-  const n = last ? parseInt(last.tokenNo.replace(/\D+/g, ""), 10) || 0 : 0;
-  return `TKN-${String(n + 1).padStart(4, "0")}`;
+  return nextSeq(() => db.appointment.findMany({ select: { tokenNo: true } }), "tokenNo", "TKN");
 }
 
 export async function listAppointments(

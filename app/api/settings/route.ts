@@ -4,8 +4,8 @@ import { getSettingsOverview, updateHospitalSettings } from "@/services/settings
 import { hospitalSettingsSchema } from "@/validators/settings";
 
 export const GET = route(async () => {
-  await requirePermission("settings:manage");
-  return ok(await getSettingsOverview());
+  const actor = await requirePermission("settings:manage");
+  return ok(await getSettingsOverview(actor));
 });
 
 export const PATCH = route(async (req) => {

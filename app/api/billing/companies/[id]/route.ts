@@ -1,8 +1,17 @@
 import { requirePermission } from "@/lib/auth/guards";
-import { assertInput, getIp, ok, route } from "@/lib/http";
+import { assertInput, ApiError, getIp, ok, route } from "@/lib/http";
+import { db } from "@/lib/db";
 import { logAudit } from "@/services/audit";
 import { updateInsuranceCompany } from "@/services/billing";
 import { insuranceCompanySchema } from "@/validators/billing";
+
+export const GET = route(async (req, ctx) => {
+  await requirePermission("insurance:read");
+  const { id } = await ctx.params;
+  const company = await db.insuranceCompany.findUnique({ where: { id } });
+  if (!company) throw new ApiError(404, "Insurance company not found");
+  return ok(company);
+});
 
 export const PATCH = route(async (req, ctx) => {
   const actor = await requirePermission("insurance:manage");

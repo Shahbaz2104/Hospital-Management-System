@@ -31,13 +31,15 @@ if (!process.env.DATABASE_URL && process.env.MONGODB_URI) {
 
 // Prisma (MongoDB) requires a database name in the connection string.
 // Normalize e.g. "mongodb.net/?retryWrites=..." → "...mongodb.net/hospital_management?retryWrites=..."
+// Also handles edge cases: trailing slash, or an existing path with no slash
+// separation (never double-append the database name).
 const rawUrl = process.env.DATABASE_URL;
 if (rawUrl) {
-  if (!/mongodb(\+srv)?:\/\/.*\/[^/?]+/.test(rawUrl)) {
-    const [base, query] = rawUrl.split("?");
-    process.env.DATABASE_URL = `${base.replace(/\/+$/, "")}/hospital_management${
-      query ? `?${query}` : ""
-    }`;
+  const [base, query] = rawUrl.split("?");
+  const trimmed = base.replace(/\/+$/, "");
+  const hasDbName = /mongodb(\+srv)?:\/\/.*\/[^/?]+/.test(trimmed);
+  if (!hasDbName) {
+    process.env.DATABASE_URL = `${trimmed}/hospital_management${query ? `?${query}` : ""}`;
   }
 }
 
