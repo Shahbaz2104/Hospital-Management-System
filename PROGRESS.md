@@ -224,6 +224,15 @@ Build order; each phase: schema → validate/generate → validators → service
 
 **Decisions:** D17 standalone Prescription model (user); D18 in-app + best-effort email (user); D19 backup script + single hospital branding (user); D20 minimal PWA (user); D21 full spec-scale seed (user).
 
+### Session 11 — Bug-fix batches (BUGS.md #20–#33)
+
+**2026-08-09**
+
+- **Batch A** (`4f391a5`) — **#21** all 9 service-level `logAudit` calls now awaited (prescriptions ×2, records, settings ×3, emergency ×4); **#20** `services/reports.ts` totals rewritten with Prisma `aggregate`/`groupBy`/counts (revenue via invoice+payment aggregates, patients by gender, appointments count, admissions avg stay via discharge rows, medicines full-scan of `items`, doctors count w/o `take`) — no more truncated 500-row sums. Gates green; pushed.
+- **Batch B** (`15c24e7`, 39 files) — **#27** QR integrity: `signHmac` (HMAC-SHA256, Web Crypto) in `lib/auth/secrets.ts`; QR payload now `{v, rx, id, s}`; verify page validates signature + HTML-escapes; middleware exempts `/api/prescriptions/verify`. **#28** hospital scoping: settings overview/updates + HR lists/stats resolve hospital from `actor.hospitalId`. **#29** `lib/sequences.ts` `nextSeq(load, field, prefix)` computes numeric max over full collection (fixes string-compare break past 9999); applied to 20 call sites across 12 services. **#30** null-role guard in `loadUserWithPermissions` (empty permissions, roleName "UNASSIGNED"). **#31** `listMedicines` honors `status` filter. **#32** env `DATABASE_URL` normalize edge (trailing slash, no double append). **#33** roles/permissions routes guarded with `users:read`; `issueSession` revokes all prior refresh tokens (single session per user); user-menu Settings gated to SUPER_ADMIN/HOSPITAL_ADMIN; added GET handlers for beds, doctors, departments, rooms, nurses, insurance companies/claims, notifications, HR leaves (detail views with includes + 404s). Gates green (typecheck, lint 0 errors / 5 pre-existing warnings, build). Pushed.
+- **Docs** — BUGS.md marked complete (all 33 findings fixed: P0 `890f75a`, P1 `853ba0d`, P2 `15c24e7`).
+- **Remaining** — Phase 10 (polish: Cloudinary uploads, PWA, a11y/perf, spec-scale seed, backup, final gates + browser verification + README/PROGRESS final update).
+
 ### Session 7 — Phase 6b: Insurance page UI
 
 **2026-08-08**
@@ -336,4 +345,4 @@ Build order; each phase: schema → validate/generate → validators → service
 ## Bug Hunt & Documentation
 
 - **Bug hunt** — full read-through of the codebase (all API routes, services, validators, feature components, schema, seed, auth, middleware) completed. Consolidated report with severities saved to **`BUGS.md`**.
-- **Status** — 33 findings: 10 P0 (security/data-integrity), 16 P1 (functional), 7 P2 (cleanup). Fix plan in batches: P0 → P1 → verify (typecheck/lint/build + browser smoke test) → P2, each batch committed + pushed.
+- **Status** — **complete**: all 33 findings fixed and pushed (P0 `890f75a`, P1 `853ba0d` + `4f391a5`, P2 `15c24e7`). Fix plan executed in batches: P0 → P1 → verify (typecheck/lint/build) → P2, each batch committed + pushed.

@@ -1,7 +1,7 @@
 # BUGS.md — Consolidated Bug Report & Execution Plan
 
 > Full read-through of the project: all API routes, services, validators, feature components, prisma schema, seed, auth, and middleware.
-> Status: **in progress** — fix batches applied on top of the 4 commits already pushed (see PROGRESS.md).
+> Status: **complete** — all 33 findings fixed and pushed (P0 batch `890f75a`, P1 batch `853ba0d` + `4f391a5`, P2 batch `15c24e7`).
 
 ## P0 — Security / data-integrity (fix first)
 
@@ -31,8 +31,8 @@
 | 17 | **Audit-log page 500 on one malformed `meta`** | `app/api/audit-logs/route.ts:41` |
 | 18 | **Duplicate audit entries** (route + service both log) — all create routes | many files |
 | 19 | **Seed attendance loop is infinite-ish** — ~180 rows all for 1 employee; re-seed crashes (P2002) | `prisma/seed.ts:502-524` |
-| 20 | **Reports totals use truncated 500-row subset** (gender/revenue sums wrong) | `services/reports.ts:47-111` |
-| 21 | **Unawaited `logAudit`** (fire-and-forget) can drop audit rows in serverless | settings/prescriptions/pharmacy/billing |
+| 20 | **Reports totals use truncated 500-row subset** (gender/revenue sums wrong) | `services/reports.ts:47-111` — **FIXED** `4f391a5` (aggregate queries) |
+| 21 | **Unawaited `logAudit`** (fire-and-forget) can drop audit rows in serverless | settings/prescriptions/pharmacy/billing — **FIXED** `4f391a5` (all `await`ed) |
 | 22 | **Calendar pageSize 500 clamped to 100** — month view silently incomplete | `lib/pagination.ts` vs appointments-page |
 | 23 | **Insurance policy auto-number never persisted to patient** (`undefined` write) | `services/billing.ts:427-459` |
 | 24 | **Departments PATCH validates `code` but never saves it** | `services/master-data.ts:69-76` |
@@ -43,13 +43,13 @@
 
 | # | Bug | Location |
 |---|-----|----------|
-| 27 | **QR "verification" forgeable** (no signature); verify endpoint 401'd by middleware (not public as designed); HTML unescaped | `services/prescriptions.ts:224-228`, `app/api/prescriptions/verify/route.ts` |
-| 28 | **Multi-tenant: settings/HR target first hospital**, lists ignore `hospitalId` | `services/settings.ts:32,72,97,112`, list routes |
-| 29 | **Sequence counters break past 9999** (string compare) — all `nextXxx()` helpers | 12+ services |
-| 30 | **Null-role crash** — `user.role.rolePermissions` deref without check | `session.ts:77`, `auth.ts:24` |
-| 31 | **`listMedicines` ignores `status` filter** | `services/pharmacy.ts:54-69` |
-| 32 | **DATABASE_URL normalize edge** (trailing path) | `lib/env.ts:34-39` |
-| 33 | Minor: missing GET handlers, user-menu shows Settings for all roles, roles/permissions catalog exposed to patients, dangling hospital ref, login doesn't revoke old refresh tokens | misc |
+| 27 | **QR "verification" forgeable** (no signature); verify endpoint 401'd by middleware (not public as designed); HTML unescaped | `services/prescriptions.ts:224-228`, `app/api/prescriptions/verify/route.ts` — **FIXED** `15c24e7` (HMAC-signed QR `s`, verified on check, page escaped, middleware exempt) |
+| 28 | **Multi-tenant: settings/HR target first hospital**, lists ignore `hospitalId` | `services/settings.ts:32,72,97,112`, list routes — **FIXED** `15c24e7` (settings + HR resolve hospital from `actor.hospitalId`) |
+| 29 | **Sequence counters break past 9999** (string compare) — all `nextXxx()` helpers | 12+ services — **FIXED** `15c24e7` (`lib/sequences.ts` numeric max; 20 call sites) |
+| 30 | **Null-role crash** — `user.role.rolePermissions` deref without check | `session.ts:77`, `auth.ts:24` — **FIXED** `15c24e7` (empty permissions + UNASSIGNED role name) |
+| 31 | **`listMedicines` ignores `status` filter** | `services/pharmacy.ts:54-69` — **FIXED** `15c24e7` |
+| 32 | **DATABASE_URL normalize edge** (trailing path) | `lib/env.ts:34-39` — **FIXED** `15c24e7` (strip trailing slash, test trimmed base) |
+| 33 | Minor: missing GET handlers, user-menu shows Settings for all roles, roles/permissions catalog exposed to patients, dangling hospital ref, login doesn't revoke old refresh tokens | misc — **FIXED** `15c24e7` (9 detail GETs added; user-menu Settings gated to SUPER_ADMIN/HOSPITAL_ADMIN; roles/permissions routes guarded `users:read`; `issueSession` revokes prior refresh tokens) |
 
 ## Verified OK (not bugs)
 - All mutating routes guarded; notifications scoped to user; date handling consistent; typecheck/lint/build green.
@@ -95,12 +95,12 @@
 - Browser smoke-test: login → booking → billing → notifications → OPD print → emergency queue
 
 ## Phase 4 — P2 fixes (commit batch 3, then final verify + push)
-27. QR signature + middleware exemption
-28. Hospital scoping
-29. Sequence counters
-30. Null-role guard
-31. Status filter
-32. Env edge
-33. Misc
+27. QR signature + middleware exemption — ✅ `15c24e7`
+28. Hospital scoping — ✅ `15c24e7`
+29. Sequence counters — ✅ `15c24e7`
+30. Null-role guard — ✅ `15c24e7`
+31. Status filter — ✅ `15c24e7`
+32. Env edge — ✅ `15c24e7`
+33. Misc — ✅ `15c24e7`
 
-Each batch = one commit + push (auto-deploys to Vercel).
+Each batch = one commit + push (auto-deploys to Vercel). All batches pushed: `890f75a` (P0), `853ba0d` (P1), `4f391a5` (P1 follow-up), `15c24e7` (P2).
