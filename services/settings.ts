@@ -56,7 +56,10 @@ export async function getSettingsOverview() {
       port: Number(settings["smtp.port"]) || 587,
       secure: settings["smtp.secure"] === "true",
       user: settings["smtp.user"] ?? "",
-      pass: settings["smtp.pass"] ?? "",
+      // Never return the stored password — only a flag so the UI can show
+      // "already configured". The client sends back an empty pass to keep it.
+      pass: "",
+      hasPassword: Boolean(settings["smtp.pass"]),
       from: settings["smtp.from"] ?? "",
     },
     notifications: {
@@ -96,14 +99,18 @@ export async function updateHospitalSettings(actor: { id: string }, input: Hospi
 export async function updateSmtpSettings(actor: { id: string }, input: SmtpSettingsInput) {
   const hospital = await db.hospital.findFirst({ orderBy: { createdAt: "asc" } });
   if (!hospital) throw new ApiError(404, "Hospital not found");
-  await Promise.all([
+  const updates = [
     upsertSettings(hospital.id, "smtp.host", input.host),
     upsertSettings(hospital.id, "smtp.port", String(input.port)),
     upsertSettings(hospital.id, "smtp.secure", String(input.secure)),
     upsertSettings(hospital.id, "smtp.user", input.user ?? ""),
-    upsertSettings(hospital.id, "smtp.pass", input.pass ?? ""),
     upsertSettings(hospital.id, "smtp.from", input.from ?? ""),
-  ]);
+  ];
+  // The password is write-only: an empty pass means "keep the current one".
+  if (input.pass && input.pass.trim().length > 0) {
+    updates.push(upsertSettings(hospital.id, "smtp.pass", input.pass));
+  }
+  await Promise.all(updates);
   logAudit({ userId: actor.id, action: "SETTINGS_SMTP_UPDATED", entity: "Hospital", entityId: hospital.id });
   return { ok: true };
 }

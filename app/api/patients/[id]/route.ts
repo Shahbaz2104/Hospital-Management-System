@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/auth/guards";
+import { assertPatientScope, getPatientScope } from "@/lib/auth/scoping";
 import { assertInput, ApiError, getIp, ok, route } from "@/lib/http";
 import { db } from "@/lib/db";
 import { logAudit } from "@/services/audit";
@@ -6,8 +7,10 @@ import { deletePatient, updatePatient } from "@/services/clinical";
 import { patientSchema } from "@/validators/clinical";
 
 export const GET = route(async (req, ctx) => {
-  await requirePermission("patients:read");
+  const actor = await requirePermission("patients:read");
   const { id } = await ctx.params;
+
+  assertPatientScope(actor, id, await getPatientScope(actor));
 
   const patient = await db.patient.findUnique({
     where: { id },

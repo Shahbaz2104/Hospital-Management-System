@@ -30,7 +30,7 @@ type SettingsOverview = {
     workingHoursEnd: string;
     appointmentDuration: number;
   };
-  smtp: { host: string; port: number; secure: boolean; user: string; pass: string; from: string };
+  smtp: { host: string; port: number; secure: boolean; user: string; pass: string; hasPassword: boolean; from: string };
   notifications: {
     lowStockThreshold: number;
     expiryAlertDays: number;
@@ -166,7 +166,7 @@ function HospitalTab({ initial, onSaved }: { initial: SettingsOverview["hospital
 }
 
 function SmtpTab({ initial, onSaved }: { initial: SettingsOverview["smtp"]; onSaved: () => void }) {
-  const [form, setForm] = React.useState(initial);
+  const [form, setForm] = React.useState({ ...initial, pass: "" });
 
   const mut = useMutation({
     mutationFn: () => apiPatch("/settings/smtp", form),
@@ -204,7 +204,12 @@ function SmtpTab({ initial, onSaved }: { initial: SettingsOverview["smtp"]; onSa
           </div>
           <div className="grid gap-1.5">
             <Label className="text-xs">Password</Label>
-            <Input type="password" value={form.pass} onChange={set("pass")} />
+            <Input
+              type="password"
+              value={form.pass}
+              onChange={set("pass")}
+              placeholder={initial.hasPassword ? "•••••••• (leave blank to keep current)" : "SMTP password"}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label className="text-xs">From address</Label>

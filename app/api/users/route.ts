@@ -5,12 +5,13 @@ import { hashPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
 import { ApiError, assertInput, getIp, ok, route } from "@/lib/http";
 import { logAudit } from "@/services/audit";
+import { passwordSchema } from "@/validators/auth";
 
 const createUserSchema = z.object({
   firstName: z.string().trim().min(2, "First name is required"),
   lastName: z.string().trim().min(2, "Last name is required"),
   email: z.string().trim().toLowerCase().email("Enter a valid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: passwordSchema,
   phone: z.string().trim().optional(),
   title: z.string().trim().optional(),
   roleName: z.string().min(1, "Role is required"),
@@ -75,6 +76,12 @@ export const POST = route(async (req: Request) => {
 
   const role = await db.role.findUnique({ where: { name: input.roleName } });
   if (!role) throw new ApiError(400, `Unknown role: ${input.roleName}`);
+
+  // Privilege escalation guard: SUPER_ADMIN may only be provisioned by the
+  // seed script, never through the user-management API.
+  if (role.name === "SUPER_ADMIN") {
+    throw new ApiError(403, "SUPER_ADMIN accounts can only be created via the seed script");
+  }
 
   const exists = await db.user.findUnique({ where: { email: input.email } });
   if (exists) throw new ApiError(409, "A user with this email already exists");

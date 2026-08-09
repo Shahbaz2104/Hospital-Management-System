@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/auth/guards";
+import { getPatientScope } from "@/lib/auth/scoping";
 import { assertInput, getIp, ok, route } from "@/lib/http";
 import { parseListParams } from "@/lib/pagination";
 import { db } from "@/lib/db";
@@ -7,7 +8,7 @@ import { createAppointment } from "@/services/clinical";
 import { appointmentSchema } from "@/validators/clinical";
 
 export const GET = route(async (req: Request) => {
-  await requirePermission("appointments:read");
+  const actor = await requirePermission("appointments:read");
 
   const url = new URL(req.url);
   const { page, pageSize, search } = parseListParams(url);
@@ -16,7 +17,11 @@ export const GET = route(async (req: Request) => {
   const status = url.searchParams.get("status") ?? undefined;
   const date = url.searchParams.get("date") ?? undefined;
 
+  // PATIENT actors can only see their own appointments (IDOR guard).
+  const scopedPatientId = await getPatientScope(actor);
+
   const where: Record<string, unknown> = {};
+  if (scopedPatientId) where.patientId = scopedPatientId;
   if (search) {
     where.OR = [
       { tokenNo: { contains: search, mode: "insensitive" } },

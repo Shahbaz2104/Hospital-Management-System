@@ -1,5 +1,6 @@
 import { requirePermission } from "@/lib/auth/guards";
 import { assertInput, getIp, ok, route } from "@/lib/http";
+import { getPatientScope } from "@/lib/auth/scoping";
 import { insensitiveContains, parseListParams } from "@/lib/pagination";
 import { db } from "@/lib/db";
 import { logAudit } from "@/services/audit";
@@ -7,21 +8,24 @@ import { createPatient } from "@/services/clinical";
 import { patientSchema } from "@/validators/clinical";
 
 export const GET = route(async (req: Request) => {
-  await requirePermission("patients:read");
+  const actor = await requirePermission("patients:read");
 
   const url = new URL(req.url);
   const { page, pageSize, search } = parseListParams(url);
 
-  const where = search
-    ? {
-        OR: [
-          insensitiveContains("firstName", search),
-          insensitiveContains("lastName", search),
-          insensitiveContains("patientNo", search),
-          insensitiveContains("phone", search),
-        ],
-      }
-    : {};
+  // PATIENT actors can only see their own record (IDOR guard).
+  const scopedPatientId = await getPatientScope(actor);
+
+  const where: Record<string, unknown> = {};
+  if (scopedPatientId) where.id = scopedPatientId;
+  if (search) {
+    where.OR = [
+      insensitiveContains("firstName", search),
+      insensitiveContains("lastName", search),
+      insensitiveContains("patientNo", search),
+      insensitiveContains("phone", search),
+    ];
+  }
 
   const [total, patients] = await Promise.all([
     db.patient.count({ where }),

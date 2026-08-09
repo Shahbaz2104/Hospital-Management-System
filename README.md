@@ -20,7 +20,7 @@ A production-grade, enterprise-style Hospital Management System (HMS) for hospit
 ### Prerequisites
 - Node.js >= 20
 - npm
-- MongoDB (local or Atlas)
+- MongoDB — **Atlas (replica set) required**: the app uses Prisma `$transaction` (billing, pharmacy stock, admissions, HR). A standalone local `mongod` will crash on those operations; use `mongodb-memory-server` (dev/tests) or Atlas (prod).
 
 ### Setup
 

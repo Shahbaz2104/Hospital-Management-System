@@ -251,21 +251,27 @@ export async function listPayments(filters: { method?: string; status?: string; 
 }
 
 export async function recordPayment(actor: Actor, input: z.infer<typeof recordPaymentSchema>) {
+  // Early 404 so callers get a clear error without a transaction.
   const invoice = await db.invoice.findUnique({ where: { id: input.invoiceId } });
   if (!invoice) throw new ApiError(404, "Invoice not found");
-  if (invoice.status === "CANCELLED") throw new ApiError(409, "Cannot record a payment on a cancelled invoice");
-
-  const remaining = Math.round((invoice.total - invoice.paid) * 100) / 100;
-  if (input.amount > remaining + EPSILON) {
-    throw new ApiError(400, `Amount exceeds the outstanding balance of ${remaining.toFixed(2)}`);
-  }
 
   const paymentNo = await nextNumber("payment");
   const payment = await db.$transaction(async (tx) => {
+    // Re-read inside the transaction: invoice.paid is read-modify-written
+    // here, so a stale copy from outside would cause lost updates.
+    const fresh = await tx.invoice.findUnique({ where: { id: input.invoiceId } });
+    if (!fresh) throw new ApiError(404, "Invoice not found");
+    if (fresh.status === "CANCELLED") throw new ApiError(409, "Cannot record a payment on a cancelled invoice");
+
+    const remaining = Math.round((fresh.total - fresh.paid) * 100) / 100;
+    if (input.amount > remaining + EPSILON) {
+      throw new ApiError(400, `Amount exceeds the outstanding balance of ${remaining.toFixed(2)}`);
+    }
+
     const created = await tx.payment.create({
       data: {
         paymentNo,
-        invoiceId: invoice.id,
+        invoiceId: fresh.id,
         amount: input.amount,
         method: input.method,
         reference: input.reference ?? null,
@@ -275,10 +281,10 @@ export async function recordPayment(actor: Actor, input: z.infer<typeof recordPa
         hospitalId: actor.hospitalId ?? null,
       },
     });
-    const paid = Math.round((invoice.paid + input.amount) * 100) / 100;
+    const paid = Math.round((fresh.paid + input.amount) * 100) / 100;
     await tx.invoice.update({
-      where: { id: invoice.id },
-      data: { paid, status: invoiceStatus(paid, invoice.total) },
+      where: { id: fresh.id },
+      data: { paid, status: invoiceStatus(paid, fresh.total) },
     });
     return created;
   });
@@ -294,35 +300,53 @@ export async function recordPayment(actor: Actor, input: z.infer<typeof recordPa
 }
 
 export async function refundPayment(actor: Actor, input: z.infer<typeof refundSchema>) {
-  const payment = await db.payment.findUnique({ where: { id: input.paymentId } });
+  // Early checks outside the transaction for fast failures.
+  const payment = await db.payment.findUnique({
+    where: { id: input.paymentId },
+    include: { invoice: { select: { invoiceNo: true } } },
+  });
   if (!payment) throw new ApiError(404, "Payment not found");
   if (payment.amount <= 0) throw new ApiError(409, "This payment is already a refund");
   if (payment.status !== "COMPLETED") throw new ApiError(409, "Only completed payments can be refunded");
-  if (input.amount > payment.amount + EPSILON) {
-    throw new ApiError(400, `Refund cannot exceed the original payment of ${payment.amount.toFixed(2)}`);
-  }
-
-  const invoice = await db.invoice.findUnique({ where: { id: payment.invoiceId } });
-  if (!invoice) throw new ApiError(404, "Invoice not found");
 
   const refundNo = await nextNumber("payment");
   const result = await db.$transaction(async (tx) => {
+    const freshPayment = await tx.payment.findUnique({ where: { id: input.paymentId } });
+    if (!freshPayment || freshPayment.amount <= 0 || freshPayment.status !== "COMPLETED") {
+      throw new ApiError(409, "Payment is no longer refundable");
+    }
+
+    // Cumulative cap: refunds must never exceed the original paid amount,
+    // even across multiple partial refunds of the same payment.
+    const refundedAgg = await tx.payment.aggregate({
+      where: { refundOfId: freshPayment.id },
+      _sum: { amount: true },
+    });
+    const alreadyRefunded = Math.abs(refundedAgg._sum.amount ?? 0);
+    const refundable = Math.round((freshPayment.amount - alreadyRefunded) * 100) / 100;
+    if (input.amount > refundable + EPSILON) {
+      throw new ApiError(400, `Refund cannot exceed the remaining refundable amount of ${refundable.toFixed(2)}`);
+    }
+
+    const invoice = await tx.invoice.findUnique({ where: { id: freshPayment.invoiceId } });
+    if (!invoice) throw new ApiError(404, "Invoice not found");
+
     const refund = await tx.payment.create({
       data: {
         paymentNo: refundNo,
-        invoiceId: payment.invoiceId,
+        invoiceId: freshPayment.invoiceId,
         amount: -input.amount,
-        method: payment.method,
+        method: freshPayment.method,
         status: "COMPLETED",
         notes: input.reason,
-        refundOfId: payment.id,
+        refundOfId: freshPayment.id,
         receivedById: actor.userId,
         hospitalId: actor.hospitalId ?? null,
       },
     });
-    const fullyRefunded = Math.abs(input.amount - payment.amount) <= EPSILON;
+    const fullyRefunded = Math.abs(alreadyRefunded + input.amount - freshPayment.amount) <= EPSILON;
     if (fullyRefunded) {
-      await tx.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED" } });
+      await tx.payment.update({ where: { id: freshPayment.id }, data: { status: "REFUNDED" } });
     }
     const paid = Math.round((invoice.paid - input.amount) * 100) / 100;
     const newStatus = paid <= EPSILON ? "REFUNDED" : paid >= invoice.total - EPSILON ? "PAID" : "PARTIAL";
@@ -335,7 +359,7 @@ export async function refundPayment(actor: Actor, input: z.infer<typeof refundSc
     action: "PAYMENT_REFUNDED",
     entity: "Payment",
     entityId: payment.id,
-    meta: { refundNo, invoiceNo: invoice.invoiceNo, amount: input.amount, reason: input.reason },
+    meta: { refundNo, invoiceNo: payment.invoice.invoiceNo, amount: input.amount, reason: input.reason },
   });
   return result;
 }

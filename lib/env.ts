@@ -1,6 +1,8 @@
 import { createHash } from "crypto";
 import { z } from "zod";
 
+import { secretSeed } from "@/lib/auth/secrets";
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL (or MONGODB_URI) is required"),
   JWT_ACCESS_SECRET: z.string().min(16).optional(),
@@ -52,7 +54,7 @@ const isBuildPhase =
 // cold starts and redeploys. Explicit secrets always take precedence.
 function derivedSecret(salt: string): string {
   return createHash("sha256")
-    .update(`${salt}:${process.env.DATABASE_URL ?? ""}:hms-secret`)
+    .update(secretSeed(salt))
     .digest("base64")
     .replace(/[^a-zA-Z0-9]/g, "");
 }

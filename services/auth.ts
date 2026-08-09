@@ -100,15 +100,18 @@ export async function requestPasswordReset(email: string) {
   if (!user) return null;
 
   const token = randomBytes(32).toString("hex");
-  await db.settings.create({
-    data: {
-      hospitalId: user.hospitalId ?? (await defaultHospitalId()),
-      key: `passwordReset:${user.id}`,
-      value: JSON.stringify({
-        tokenHash: hashToken(token),
-        expiresAt: Date.now() + 60 * 60 * 1000,
-      }),
-    },
+  const hospitalId = user.hospitalId ?? (await defaultHospitalId());
+  const key = `passwordReset:${user.id}`;
+  const value = JSON.stringify({
+    tokenHash: hashToken(token),
+    expiresAt: Date.now() + 60 * 60 * 1000,
+  });
+  // Upsert, not create: a repeated request before the previous token is
+  // consumed would otherwise hit the unique hospitalId_key constraint → 500.
+  await db.settings.upsert({
+    where: { hospitalId_key: { hospitalId, key } },
+    update: { value },
+    create: { hospitalId, key, value },
   });
 
   return { user, token };

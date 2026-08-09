@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/auth/guards";
+import { getPatientScope } from "@/lib/auth/scoping";
 import { assertInput, ApiError, getIp, ok, route } from "@/lib/http";
 import { db } from "@/lib/db";
 import { logAudit } from "@/services/audit";
@@ -9,7 +10,7 @@ import {
 } from "@/validators/clinical";
 
 export const GET = route(async (req, ctx) => {
-  await requirePermission("appointments:read");
+  const actor = await requirePermission("appointments:read");
   const { id } = await ctx.params;
 
   const appointment = await db.appointment.findUnique({
@@ -21,6 +22,13 @@ export const GET = route(async (req, ctx) => {
     },
   });
   if (!appointment) throw new ApiError(404, "Appointment not found");
+
+  // IDOR guard: PATIENT actors may only read their own appointments.
+  const scopedPatientId = await getPatientScope(actor);
+  if (scopedPatientId && appointment.patientId !== scopedPatientId) {
+    throw new ApiError(403, "You can only access your own appointments");
+  }
+
   return ok(appointment);
 });
 

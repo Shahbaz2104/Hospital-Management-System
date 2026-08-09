@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
+import { resolveJwtSecrets } from "@/lib/auth/secrets";
+
 type RoleKey =
   | "SUPER_ADMIN"
   | "HOSPITAL_ADMIN"
@@ -51,9 +53,10 @@ const ROUTE_ROLES: Record<string, RoleKey[]> = {
   "/users": ["SUPER_ADMIN", "HOSPITAL_ADMIN"],
 };
 
-const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET ?? "");
-
-async function verifyToken(token: string): Promise<{ sub: string; role: string } | null> {
+async function verifyToken(
+  token: string,
+  secret: Uint8Array
+): Promise<{ sub: string; role: string } | null> {
   try {
     const { payload } = await jwtVerify(token, secret);
     return { sub: String(payload.sub), role: String(payload.role) };
@@ -65,13 +68,18 @@ async function verifyToken(token: string): Promise<{ sub: string; role: string }
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Same secret resolution as the app (explicit env var, else derived from
+  // DATABASE_URL) — otherwise the role gate silently never matches.
+  const { access: accessSecret } = await resolveJwtSecrets();
+  const secret = new TextEncoder().encode(accessSecret);
+
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const isApi = pathname.startsWith("/api");
   const isAuthApi = pathname.startsWith("/api/auth");
 
   const accessToken = req.cookies.get("hms_access")?.value;
   const refreshToken = req.cookies.get("hms_refresh")?.value;
-  const payload = accessToken ? await verifyToken(accessToken) : null;
+  const payload = accessToken ? await verifyToken(accessToken, secret) : null;
 
   // ---- API: let route guards handle auth; block unknown origins on state-changing calls.
   if (isApi) {

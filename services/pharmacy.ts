@@ -360,25 +360,27 @@ export async function createSale(
   const patient = await db.patient.findUnique({ where: { id: input.patientId } });
   if (!patient) throw new ApiError(404, "Patient not found");
 
-  const medicines = await db.medicine.findMany({
-    where: { id: { in: input.items.map((i) => i.medicineId) } },
-  });
-  if (medicines.length !== input.items.length) {
-    throw new ApiError(400, "One or more medicines were not found");
-  }
-
-  const stock = new Map(medicines.map((m) => [m.id, m]));
-  for (const item of input.items) {
-    const med = stock.get(item.medicineId)!;
-    if (med.stock < item.quantity) {
-      throw new ApiError(400, `Insufficient stock for ${med.name} — only ${med.stock} available`);
-    }
-  }
-
   const total = input.items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
   const saleNo = await nextNumber("sale");
 
   const sale = await db.$transaction(async (tx) => {
+    // Read stock inside the transaction: medicine stock is read-modify-written
+    // here, so a snapshot from outside would cause lost updates on the count.
+    const medicines = await tx.medicine.findMany({
+      where: { id: { in: input.items.map((i) => i.medicineId) } },
+    });
+    if (medicines.length !== input.items.length) {
+      throw new ApiError(400, "One or more medicines were not found");
+    }
+
+    const stock = new Map(medicines.map((m) => [m.id, m]));
+    for (const item of input.items) {
+      const med = stock.get(item.medicineId)!;
+      if (med.stock < item.quantity) {
+        throw new ApiError(400, `Insufficient stock for ${med.name} — only ${med.stock} available`);
+      }
+    }
+
     const created = await tx.medicineSale.create({
       data: {
         saleNo,

@@ -24,7 +24,10 @@ export const POST = route(async (req) => {
       text: `Reset your password using this link: ${resetUrl}\n\nThis link expires in 1 hour.`,
       html: `<p>Reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link expires in 1 hour.</p>`,
     });
-    if (!delivered.devOnlyToken) {
+    // Only surface the reset link in logs when SMTP is NOT configured (dev).
+    // Never log it when the email was actually delivered — the token is a
+    // one-time password for the target mailbox.
+    if (delivered.devOnlyToken) {
       console.info(`[forgot-password] reset link for ${input.email}: ${resetUrl}`);
     }
   }
