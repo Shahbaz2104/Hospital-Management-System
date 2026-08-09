@@ -30,7 +30,7 @@ npm install
 
 # 2. Configure environment variables
 cp .env.example .env
-#   - fill in DATABASE_URL, JWT secrets, Cloudinary, SMTP
+#   - fill in DATABASE_URL, JWT secrets, Cloudinary, SMTP, Stripe (optional)
 
 # 3. Generate Prisma client + push schema
 npx prisma generate
@@ -54,7 +54,9 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run start`    | Serve the production build              |
 | `npm run lint`     | Run ESLint                              |
 | `npm run typecheck`| TypeScript check (`tsc --noEmit`)       |
-| `npm run db:seed`  | Seed the database with realistic demo data |
+| `npm run db:push`    | Push schema changes to the database      |
+| `npm run db:seed`    | Seed the database with realistic demo data |
+| `npm run db:backup`  | Dump the database to `backups/<timestamp>/dump.gz` (mongodump) |
 
 ## Roles
 
@@ -76,8 +78,26 @@ Dashboard · Patients · Doctors · Nurses · Staff · Appointments · OPD · IP
 | 3 | Patients & Appointments (OPD/IPD) | DONE |
 | 4 | Laboratory & Radiology | DONE |
 | 5 | Pharmacy & Inventory | DONE |
-| 6 | Billing, Payments, Insurance | PARTIAL — Billing + Payments + insurance backend done; Insurance UI pending |
-| 7–10 | HR & Payroll, Reports/Analytics, Emergency/Search/Settings, Polish | PENDING |
+| 6 | Billing, Payments, Insurance | DONE |
+| 7 | HR & Payroll | DONE |
+| 8 | Reports & Analytics | DONE |
+| 9 | Emergency, Medical Records, Search, Settings, Prescriptions | DONE |
+| 10 | Polish — Cloudinary uploads, PWA, a11y/perf, spec-scale seed, backups, Stripe payment automation | DONE |
+
+## Online Payments (Stripe)
+
+Billing supports fully automated payments when Stripe is configured:
+
+- **Pay online** — creates a Stripe Checkout session per invoice (partial payments supported); the webhook (`/api/webhooks/stripe`) marks the payment complete and recomputes invoice status.
+- **Payment links** — copy a shareable link for any invoice with a balance.
+- **Automated refunds** — refunding a CARD payment issues a Stripe Refund; the refund syncs back via webhook as a negative payment row.
+- **Receipts** — every completed payment has a branded A4 PDF receipt.
+
+Setup: set `STRIPE_SECRET_KEY` (secret key) and `STRIPE_WEBHOOK_SECRET` (from `stripe listen --forward-to http://localhost:3000/api/webhooks/stripe`) in `.env`. Without keys the payment UI degrades gracefully (503 "Stripe is not configured").
+
+## Cloudinary
+
+File uploads (hospital logo, medical-record attachments) are proxied through `POST /api/upload` with purpose-based size/type limits. Set `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` in `.env`; without them upload UI reports the service as not configured.
 
 ## Database Models
 

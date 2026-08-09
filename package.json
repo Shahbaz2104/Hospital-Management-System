@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
+    "db:backup": "tsx scripts/backup.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
