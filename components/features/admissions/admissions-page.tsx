@@ -435,6 +435,7 @@ export function AdmissionsPage() {
                     size="icon"
                     variant="ghost"
                     className="text-muted-foreground hover:text-destructive"
+                    aria-label="Delete admission"
                     onClick={() => onDelete(a.id, a.admissionNo)}
                   >
                     <Trash2 className="size-4" />

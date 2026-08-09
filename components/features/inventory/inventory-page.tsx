@@ -380,6 +380,7 @@ export function InventoryPage() {
                         size="icon"
                         variant="ghost"
                         className="text-muted-foreground hover:text-destructive"
+                        aria-label="Delete equipment"
                         onClick={() => onDeleteEquipment(e.id, e.name)}
                       >
                         <Trash2 className="size-4" />

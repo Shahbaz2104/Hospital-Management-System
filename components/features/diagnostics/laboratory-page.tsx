@@ -433,6 +433,7 @@ export function LaboratoryPage() {
                           size="icon"
                           variant="ghost"
                           className="text-muted-foreground hover:text-destructive"
+                          aria-label="Delete lab order"
                           onClick={() => onDelete(o.id, o.orderNo)}
                         >
                           <Trash2 className="size-4" />

@@ -491,7 +491,7 @@ model Admission {
   updatedAt   DateTime  @updatedAt
 
   invoices Invoice[]
-  emergencyCase EmergencyCase?
+  emergencyCases EmergencyCase[]
 
   @@index([patientId])
   @@index([status])
@@ -754,6 +754,10 @@ model Payment {
   amount       Float // positive = payment, negative = refund
   method       String    @default("CASH") // CASH | CARD | BANK_TRANSFER | MOBILE_WALLET | INSURANCE
   reference    String? // transaction id / cheque no
+  stripeSessionId String? // Stripe Checkout Session id (payment link)
+  stripePaymentIntentId String? // Stripe PaymentIntent id
+  stripeRefundId String? // Stripe Refund id (negative rows)
+  stripeChargeId String? // Stripe Charge id from the completed session
   status       String    @default("COMPLETED") // COMPLETED | PENDING | REFUNDED
   notes        String?
   refundOfId   String?   @db.ObjectId
@@ -766,6 +770,7 @@ model Payment {
   createdAt    DateTime  @default(now())
 
   @@index([invoiceId])
+  @@index([stripeSessionId])
   @@index([method])
   @@index([paidAt])
 }
@@ -909,7 +914,7 @@ model EmergencyCase {
   ambulanceDispatchedAt  DateTime?
   ambulanceEtaMinutes    Int?
   ambulanceNotes         String?
-  admittedAsAdmissionId  String?   @unique @db.ObjectId
+  admittedAsAdmissionId  String?   @db.ObjectId
   admittedAsAdmission    Admission? @relation(fields: [admittedAsAdmissionId], references: [id], onDelete: SetNull)
   createdById            String?   @db.ObjectId
   createdBy              User?     @relation("EmergencyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)

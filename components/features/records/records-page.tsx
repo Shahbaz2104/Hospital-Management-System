@@ -4,10 +4,11 @@ import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { FileText, FolderOpen, Loader2, Plus, Search } from "lucide-react";
+import { FileText, FolderOpen, Loader2, Paperclip, Plus, Search, UploadCloud, X } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
+import { useUpload } from "@/components/shared/use-upload";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,10 +39,13 @@ type RecordItem = {
   type: string;
   title: string;
   summary: string | null;
+  files: string | null;
   createdAt: string;
   patient: { id: string; patientNo: string; firstName: string; lastName: string };
   doctor: { user: { title: string | null; firstName: string; lastName: string } } | null;
 };
+
+type UploadedFile = { name: string; url: string };
 
 type PatientOption = { id: string; patientNo: string; firstName: string; lastName: string };
 type DoctorOption = { id: string; user: { title: string | null; firstName: string; lastName: string } };
@@ -142,6 +146,25 @@ export function RecordsPage() {
                     {r.doctor ? ` · Dr. ${r.doctor.user.firstName} ${r.doctor.user.lastName}` : ""}
                     {" · "}{format(new Date(r.createdAt), "MMM d, yyyy")}
                   </p>
+                  {(() => {
+                    const files: UploadedFile[] = r.files ? JSON.parse(r.files) : [];
+                    if (files.length === 0) return null;
+                    return (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {files.map((f) => (
+                          <a
+                            key={f.url}
+                            href={f.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
+                          >
+                            <Paperclip className="size-3" /> {f.name}
+                          </a>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -174,6 +197,10 @@ function CreateRecordDialog({
   const [title, setTitle] = React.useState("");
   const [summary, setSummary] = React.useState("");
   const [doctorId, setDoctorId] = React.useState("");
+  const [files, setFiles] = React.useState<UploadedFile[]>([]);
+  const { openPicker, picker } = useUpload("record", (file) => {
+    setFiles((prev) => (prev.length >= 10 ? prev : [...prev, file]));
+  });
 
   const { data: patients } = useQuery({
     queryKey: ["record-patients"],
@@ -192,6 +219,7 @@ function CreateRecordDialog({
         title: title.trim(),
         summary: summary.trim() || undefined,
         doctorId: doctorId || undefined,
+        files: files.length > 0 ? files : undefined,
       }),
     onSuccess: () => {
       toast.success("Record created");
@@ -252,6 +280,29 @@ function CreateRecordDialog({
           <div className="grid gap-1.5">
             <Label className="text-xs">Summary</Label>
             <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Attachments</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={openPicker} disabled={files.length >= 10}>
+                {picker}<UploadCloud className="size-4" /> Upload file
+              </Button>
+              {files.map((f) => (
+                <span key={f.url} className="inline-flex items-center gap-1 rounded-md border bg-muted/40 px-2 py-1 text-xs">
+                  <Paperclip className="size-3" />
+                  <span className="max-w-40 truncate">{f.name}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${f.name}`}
+                    onClick={() => setFiles((prev) => prev.filter((x) => x.url !== f.url))}
+                    className="ml-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground">Images or PDFs, max 5 MB each (Cloudinary).</p>
           </div>
         </div>
         <DialogFooter>

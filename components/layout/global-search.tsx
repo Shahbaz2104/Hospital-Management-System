@@ -36,6 +36,20 @@ export function GlobalSearch() {
   const router = useRouter();
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "/") return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName ?? "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable) return;
+      e.preventDefault();
+      inputRef.current?.focus();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const active = query.trim().length >= 2;
 
@@ -60,7 +74,8 @@ export function GlobalSearch() {
         <div className="relative hidden w-full max-w-md sm:block">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search patients, doctors, appointments, medicines, departments, staff…"
+            ref={inputRef}
+            placeholder="Search patients, doctors, appointments, medicines, departments, staff… (press /)"
             className="pl-9"
             aria-label="Global search"
             value={query}

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Building2, Loader2, Mail, Save, Settings2 } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { useUpload } from "@/components/shared/use-upload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -83,6 +84,7 @@ export function SettingsPage() {
 
 function HospitalTab({ initial, onSaved }: { initial: SettingsOverview["hospital"]; onSaved: () => void }) {
   const [form, setForm] = React.useState(initial);
+  const { openPicker, picker } = useUpload("logo");
 
   const mut = useMutation({
     mutationFn: () => apiPatch("/settings", form),
@@ -126,8 +128,17 @@ function HospitalTab({ initial, onSaved }: { initial: SettingsOverview["hospital
             <Input value={form.country} onChange={set("country")} />
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Logo URL</Label>
-            <Input value={form.logoUrl} onChange={set("logoUrl")} placeholder="https://… (Cloudinary uploads in Phase 10)" />
+            <Label className="text-xs">Logo</Label>
+            <div className="flex items-center gap-2">
+              {form.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={form.logoUrl} alt="Hospital logo preview" className="size-10 rounded-md border object-cover" />
+              ) : null}
+              <Input value={form.logoUrl} onChange={set("logoUrl")} placeholder="https://… or upload below" />
+              <Button type="button" variant="outline" size="sm" onClick={openPicker} className="shrink-0">
+                {picker}Upload
+              </Button>
+            </div>
           </div>
           <div className="grid gap-1.5">
             <Label className="text-xs">Currency</Label>

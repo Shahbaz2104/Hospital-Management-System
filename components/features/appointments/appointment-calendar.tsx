@@ -95,6 +95,7 @@ export function AppointmentCalendar({
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Previous month"
             onClick={() => setMonth((m) => subMonths(m, 1))}
           >
             <ChevronLeft className="size-4" />
@@ -105,6 +106,7 @@ export function AppointmentCalendar({
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Next month"
             onClick={() => setMonth((m) => addMonths(m, 1))}
           >
             <ChevronRight className="size-4" />

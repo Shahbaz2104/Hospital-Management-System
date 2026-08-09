@@ -11,7 +11,10 @@ import {
   Banknote,
   CircleDollarSign,
   Eye,
+  ExternalLink,
+  FileDown,
   FileText,
+  Link2,
   Loader2,
   Plus,
   Printer,
@@ -263,6 +266,25 @@ export function BillingPage() {
     onPrint(row);
   }
 
+  async function openCheckout(invoiceId: string) {
+    try {
+      const res = await apiPost<{ url: string }>(`/billing/invoices/${invoiceId}/checkout`);
+      window.open(res.url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not open checkout");
+    }
+  }
+
+  async function copyPayLink(invoiceId: string) {
+    try {
+      const res = await apiGet<{ url: string }>(`/billing/invoices/${invoiceId}/pay-link`);
+      await navigator.clipboard.writeText(res.url);
+      toast.success("Payment link copied to clipboard");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create payment link");
+    }
+  }
+
   return (
     <div>
       <PageHeader title="Billing" description="Invoices, payments and refunds">
@@ -349,6 +371,16 @@ export function BillingPage() {
                         <Button variant="ghost" size="icon-sm" onClick={() => onPrintRow(inv)} title="Print invoice">
                           <Printer />
                         </Button>
+                        {balance > 0 && inv.status !== "CANCELLED" && inv.status !== "REFUNDED" && (
+                          <>
+                            <Button variant="ghost" size="icon-sm" onClick={() => void openCheckout(inv.id)} title="Pay online (Stripe)">
+                              <ExternalLink />
+                            </Button>
+                            <Button variant="ghost" size="icon-sm" onClick={() => void copyPayLink(inv.id)} title="Copy payment link">
+                              <Link2 />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -375,6 +407,8 @@ export function BillingPage() {
         loading={!!detailId && !detail}
         onClose={() => setDetailId(null)}
         onOpenPay={() => setPayOpen(true)}
+        onPayOnline={() => detail && void openCheckout(detail.id)}
+        onCopyLink={() => detail && void copyPayLink(detail.id)}
         onRefund={setRefundOf}
         onCancelInvoice={async () => {
           if (!detail) return;
@@ -762,6 +796,8 @@ function InvoiceDetailDialog({
   loading,
   onClose,
   onOpenPay,
+  onPayOnline,
+  onCopyLink,
   onRefund,
   onCancelInvoice,
   onPrint,
@@ -770,6 +806,8 @@ function InvoiceDetailDialog({
   loading: boolean;
   onClose: () => void;
   onOpenPay: () => void;
+  onPayOnline: () => void;
+  onCopyLink: () => void;
   onRefund: (payment: { id: string; paymentNo: string; amount: number }) => void;
   onCancelInvoice: () => void;
   onPrint: () => void;
@@ -894,14 +932,24 @@ function InvoiceDetailDialog({
                           </td>
                           <td className="px-4 py-2 text-right">
                             {p.amount > 0 && p.status === "COMPLETED" && (
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                title="Refund this payment"
-                                onClick={() => onRefund({ id: p.id, paymentNo: p.paymentNo, amount: p.amount })}
-                              >
-                                <Undo2 />
-                              </Button>
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  title="Download receipt (PDF)"
+                                  onClick={() => window.open(`/api/payments/${p.id}/receipt`, "_blank")}
+                                >
+                                  <FileDown />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  title="Refund this payment"
+                                  onClick={() => onRefund({ id: p.id, paymentNo: p.paymentNo, amount: p.amount })}
+                                >
+                                  <Undo2 />
+                                </Button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -928,9 +976,17 @@ function InvoiceDetailDialog({
                 <Printer className="size-4" /> Print
               </Button>
               {detail.status !== "CANCELLED" && detail.status !== "REFUNDED" && detail.paid < detail.total - 0.009 && (
-                <Button onClick={onOpenPay}>
-                  <Banknote className="size-4" /> Record payment
-                </Button>
+                <>
+                  <Button variant="outline" onClick={onPayOnline}>
+                    <ExternalLink className="size-4" /> Pay online
+                  </Button>
+                  <Button variant="outline" onClick={onCopyLink}>
+                    <Link2 className="size-4" /> Copy payment link
+                  </Button>
+                  <Button onClick={onOpenPay}>
+                    <Banknote className="size-4" /> Record payment
+                  </Button>
+                </>
               )}
             </DialogFooter>
           </div>

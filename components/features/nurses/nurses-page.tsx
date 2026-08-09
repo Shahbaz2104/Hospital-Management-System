@@ -206,6 +206,7 @@ export function NursesPage() {
           variant="ghost"
           size="icon"
           className="text-muted-foreground hover:text-destructive"
+          aria-label="Delete nurse"
           onClick={() =>
             onDelete(row.original.id, `${row.original.user.firstName} ${row.original.user.lastName}`)
           }

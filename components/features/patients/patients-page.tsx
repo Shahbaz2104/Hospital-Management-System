@@ -232,6 +232,7 @@ export function PatientsPage() {
           variant="ghost"
           size="icon"
           className="text-muted-foreground hover:text-destructive"
+          aria-label="Delete patient"
           onClick={() =>
             onDelete(row.original.id, `${row.original.firstName} ${row.original.lastName}`)
           }

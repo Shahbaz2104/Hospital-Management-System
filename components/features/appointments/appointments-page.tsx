@@ -485,6 +485,7 @@ export function AppointmentsPage() {
                     size="icon"
                     variant="ghost"
                     className="text-muted-foreground hover:text-destructive"
+                    aria-label="Delete appointment"
                     onClick={() => onDelete(a.id, a.tokenNo)}
                   >
                     <Trash2 className="size-4" />

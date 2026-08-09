@@ -380,6 +380,7 @@ export function PharmacyPage() {
                           size="icon"
                           variant="ghost"
                           className="text-muted-foreground hover:text-destructive"
+                          aria-label="Delete medicine"
                           onClick={() => onDeleteMedicine(m.id, m.name)}
                         >
                           <Trash2 className="size-4" />
@@ -950,6 +951,7 @@ function SaleDialog({
                     size="icon"
                     variant="ghost"
                     className="text-muted-foreground hover:text-destructive"
+                    aria-label="Remove medicine line"
                     disabled={lines.length === 1}
                     onClick={() => setLines((l) => l.filter((_, j) => j !== i))}
                   >
@@ -1115,6 +1117,7 @@ function PurchaseOrderDialog({
                   size="icon"
                   variant="ghost"
                   className="text-muted-foreground hover:text-destructive"
+                  aria-label="Remove line"
                   disabled={lines.length === 1}
                   onClick={() => setLines((l) => l.filter((_, j) => j !== i))}
                 >

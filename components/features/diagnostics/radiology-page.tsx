@@ -325,6 +325,7 @@ export function RadiologyPage() {
                       size="icon"
                       variant="ghost"
                       className="text-muted-foreground hover:text-destructive"
+                      aria-label="Delete radiology order"
                       onClick={() => onDelete(o.id, o.orderNo)}
                     >
                       <Trash2 className="size-4" />
@@ -599,6 +600,7 @@ function ReportDialog({
                       size="icon"
                       variant="ghost"
                       className="shrink-0 text-muted-foreground hover:text-destructive"
+                      aria-label="Remove report line"
                       disabled={lines.length === 1}
                       onClick={() => setLines((l) => l.filter((_, j) => j !== i))}
                     >

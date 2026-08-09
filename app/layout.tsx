@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 
 import { Providers } from "@/components/providers";
+import { PwaRegister } from "@/components/shared/pwa-register";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -25,6 +26,12 @@ export const metadata: Metadata = {
   },
   description:
     "Enterprise-grade hospital management for patients, doctors, billing, pharmacy, laboratory, and more.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "HMS",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({
@@ -39,6 +46,7 @@ export default function RootLayout({
       >
         <Providers>{children}</Providers>
         <Toaster position="top-right" richColors />
+        <PwaRegister />
       </body>
     </html>
   );

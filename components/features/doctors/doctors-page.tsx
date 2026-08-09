@@ -211,6 +211,7 @@ export function DoctorsPage() {
           variant="ghost"
           size="icon"
           className="text-muted-foreground hover:text-destructive"
+          aria-label="Delete doctor"
           onClick={() =>
             onDelete(row.original.id, `${row.original.user.firstName} ${row.original.user.lastName}`)
           }

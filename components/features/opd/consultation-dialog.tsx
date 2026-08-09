@@ -311,6 +311,7 @@ export function ConsultationDialog({
                         variant="ghost"
                         size="icon"
                         className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
+                        aria-label="Remove medicine line"
                         onClick={() => remove(index)}
                         disabled={fields.length === 1}
                       >

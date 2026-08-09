@@ -3,11 +3,12 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CreditCard, Undo2, Wallet } from "lucide-react";
+import { CreditCard, FileDown, Undo2, Wallet } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -110,6 +111,7 @@ export function PaymentsPage() {
                 <th className="px-4 py-3 text-right">Amount</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Received by</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -145,6 +147,18 @@ export function PaymentsPage() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {p.receivedBy ? `${p.receivedBy.firstName} ${p.receivedBy.lastName}` : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {p.amount > 0 && p.status === "COMPLETED" && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="Download receipt (PDF)"
+                        onClick={() => window.open(`/api/payments/${p.id}/receipt`, "_blank")}
+                      >
+                        <FileDown />
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

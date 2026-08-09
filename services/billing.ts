@@ -1,6 +1,9 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
 import { nextSeq } from "@/lib/sequences";
+import { isStripeConfigured, stripe } from "@/lib/stripe";
+import { env } from "@/lib/env";
+import { notify } from "@/services/notifications";
 import { z } from "zod";
 import type {
   createClaimSchema,
@@ -299,6 +302,28 @@ export async function refundPayment(actor: Actor, input: z.infer<typeof refundSc
     const invoice = await tx.invoice.findUnique({ where: { id: freshPayment.invoiceId } });
     if (!invoice) throw new ApiError(404, "Invoice not found");
 
+    // Online payments (CARD via Stripe) are refunded through the gateway;
+    // the negative ledger row below records the gateway refund id.
+    let stripeRefundId: string | null = null;
+    if (freshPayment.method === "CARD" && freshPayment.stripePaymentIntentId) {
+      if (!isStripeConfigured()) {
+        throw new ApiError(503, "Stripe is not configured — cannot refund an online payment");
+      }
+      const currency = await invoiceCurrency(freshPayment.invoiceId);
+      try {
+        const gatewayRefund = await stripe().refunds.create({
+          payment_intent: freshPayment.stripePaymentIntentId,
+          amount: toStripeAmount(input.amount, currency),
+        });
+        stripeRefundId = gatewayRefund.id;
+      } catch (e) {
+        throw new ApiError(
+          502,
+          `Stripe refund failed: ${e instanceof Error ? e.message : "unknown error"}`
+        );
+      }
+    }
+
     const refund = await tx.payment.create({
       data: {
         paymentNo: refundNo,
@@ -308,6 +333,8 @@ export async function refundPayment(actor: Actor, input: z.infer<typeof refundSc
         status: "COMPLETED",
         notes: input.reason,
         refundOfId: freshPayment.id,
+        stripeRefundId,
+        stripePaymentIntentId: freshPayment.stripePaymentIntentId,
         receivedById: actor.userId,
         hospitalId: actor.hospitalId ?? null,
       },
@@ -532,4 +559,256 @@ export async function decideClaim(
   });
 
   return updated;
+}
+
+// ---------------------------------------------------------------------------
+// Stripe online payments (checkout sessions, webhooks, gateway refunds)
+// ---------------------------------------------------------------------------
+
+const ZERO_DECIMAL_CURRENCIES = new Set(["JPY", "KRW", "VND", "IDR", "CLP", "ISK", "BYR"]);
+
+export function toStripeAmount(amount: number, currency: string): number {
+  return ZERO_DECIMAL_CURRENCIES.has(currency.toUpperCase())
+    ? Math.round(amount)
+    : Math.round(amount * 100);
+}
+
+async function invoiceCurrency(invoiceId: string): Promise<string> {
+  const hospital = await db.hospital.findUnique({
+    where: { id: (await db.invoice.findUnique({ where: { id: invoiceId }, select: { hospitalId: true } }))?.hospitalId ?? "" },
+    select: { currency: true },
+  });
+  return hospital?.currency ?? "USD";
+}
+
+/**
+ * Creates (or reuses an open) Stripe Checkout Session for the outstanding
+ * balance of an invoice. A PENDING payment row is recorded so the pay link
+ * and webhook have a stable handle; partial payments accumulate via the
+ * webhook's invoice-paid recomputation.
+ */
+export async function createCheckoutSession(actor: Actor, invoiceId: string) {
+  if (!isStripeConfigured()) {
+    throw new ApiError(503, "Stripe is not configured — set STRIPE_SECRET_KEY");
+  }
+
+  const invoice = await db.invoice.findUnique({
+    where: { id: invoiceId },
+    include: {
+      patient: { select: { id: true, patientNo: true, firstName: true, lastName: true, email: true } },
+      payments: { select: { id: true, status: true, stripeSessionId: true, stripePaymentIntentId: true } },
+    },
+  });
+  if (!invoice) throw new ApiError(404, "Invoice not found");
+  if (invoice.status === "CANCELLED" || invoice.status === "REFUNDED") {
+    throw new ApiError(409, `Cannot pay a ${invoice.status.toLowerCase()} invoice`);
+  }
+
+  const due = Math.round((invoice.total - invoice.paid) * 100) / 100;
+  if (due <= EPSILON) throw new ApiError(409, "Invoice is already fully paid");
+
+  // Reuse an open checkout session (idempotent pay-link sharing).
+  const pending = invoice.payments.find(
+    (p) => p.status === "PENDING" && p.stripeSessionId && !p.stripePaymentIntentId
+  );
+  if (pending?.stripeSessionId) {
+    const session = await stripe().checkout.sessions.retrieve(pending.stripeSessionId);
+    if (session.status === "open" && session.url) {
+      return { url: session.url, sessionId: session.id, paymentNo: undefined };
+    }
+    await db.payment.update({ where: { id: pending.id }, data: { status: "CANCELLED" } });
+  }
+
+  const currency = await invoiceCurrency(invoice.id);
+  const session = await stripe().checkout.sessions.create({
+    mode: "payment",
+    client_reference_id: invoice.id,
+    metadata: { invoiceId: invoice.id, hospitalId: actor.hospitalId ?? "", initiatedBy: actor.userId },
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: currency.toLowerCase(),
+          product_data: {
+            name: `Invoice ${invoice.invoiceNo}`,
+            description: `Payment for ${invoice.patient.firstName} ${invoice.patient.lastName} (${invoice.patient.patientNo})`,
+          },
+          unit_amount: toStripeAmount(due, currency),
+        },
+      },
+    ],
+    success_url: `${env.NEXT_PUBLIC_APP_URL}/payments?session={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${env.NEXT_PUBLIC_APP_URL}/billing`,
+    expires_at: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
+  });
+  if (!session.url) throw new ApiError(502, "Stripe did not return a checkout URL");
+
+  const paymentNo = await nextNumber("payment");
+  await db.payment.create({
+    data: {
+      paymentNo,
+      invoiceId: invoice.id,
+      amount: due,
+      method: "CARD",
+      status: "PENDING",
+      reference: session.id,
+      stripeSessionId: session.id,
+      notes: "Awaiting online payment (Stripe)",
+      receivedById: actor.userId,
+      hospitalId: actor.hospitalId ?? null,
+    },
+  });
+
+  return { url: session.url, sessionId: session.id, paymentNo };
+}
+
+/** Recompute invoice.paid from its completed payments — idempotent. */
+async function recomputeInvoicePaid(
+  tx: { payment: typeof db.payment; invoice: typeof db.invoice },
+  invoiceId: string
+) {
+  const [agg, invoice] = await Promise.all([
+    tx.payment.aggregate({ where: { invoiceId, status: "COMPLETED" }, _sum: { amount: true } }),
+    tx.invoice.findUnique({ where: { id: invoiceId }, select: { id: true, total: true } }),
+  ]);
+  if (!invoice) throw new ApiError(404, "Invoice not found");
+  const paid = Math.round((agg._sum.amount ?? 0) * 100) / 100;
+  const status = paid <= -EPSILON ? "REFUNDED" : invoiceStatus(paid, invoice.total);
+  return tx.invoice.update({ where: { id: invoiceId }, data: { paid, status } });
+}
+
+export async function completeStripeCheckout(session: {
+  id: string;
+  payment_status: string | null;
+  amount_total: number | null;
+  currency: string | null;
+  metadata: Record<string, string> | null;
+  payment_intent: string | null;
+}) {
+  const existing = await db.payment.findFirst({ where: { stripeSessionId: session.id } });
+  if (session.payment_status !== "paid") {
+    if (existing && existing.status === "PENDING") {
+      await db.payment.update({ where: { id: existing.id }, data: { status: "CANCELLED" } });
+    }
+    return null;
+  }
+  if (!existing) return null; // only sessions we created are processed
+
+  if (existing.status === "COMPLETED") return existing; // webhook retry — idempotent
+
+  const currency = session.currency ?? "usd";
+  const amount = ZERO_DECIMAL_CURRENCIES.has(currency.toUpperCase())
+    ? session.amount_total ?? 0
+    : Math.round((session.amount_total ?? 0) / 100 * 100) / 100;
+
+  const paymentIntentId = session.payment_intent;
+  let chargeId: string | null = null;
+  if (paymentIntentId) {
+    const intent = await stripe().paymentIntents.retrieve(paymentIntentId);
+    chargeId = typeof intent.latest_charge === "string" ? intent.latest_charge : null;
+  }
+
+  const updated = await db.$transaction(async (tx) => {
+    const payment = await tx.payment.update({
+      where: { id: existing.id },
+      data: {
+        status: "COMPLETED",
+        amount,
+        paidAt: new Date(),
+        stripePaymentIntentId: paymentIntentId,
+        stripeChargeId: chargeId,
+        notes: "Paid online via Stripe",
+      },
+    });
+    await recomputeInvoicePaid(tx, existing.invoiceId);
+    return payment;
+  });
+
+  // Notify billing staff + the patient, and send a receipt email.
+  const invoice = await db.invoice.findUnique({
+    where: { id: existing.invoiceId },
+    include: {
+      patient: { select: { id: true, firstName: true, lastName: true, email: true } },
+    },
+  });
+  if (invoice) {
+    await notify({
+      roles: ["ACCOUNTANT", "HOSPITAL_ADMIN", "RECEPTIONIST"],
+      title: `Payment received — ${invoice.invoiceNo}`,
+      message: `${invoice.patient.firstName} ${invoice.patient.lastName} paid ${amount.toFixed(2)} online.`,
+      type: "BILLING",
+      entity: "Invoice",
+      entityId: invoice.id,
+      hospitalId: invoice.hospitalId,
+    });
+    if (invoice.patient.email) {
+      const { sendEmail } = await import("@/lib/email");
+      await sendEmail({
+        to: invoice.patient.email,
+        subject: `Payment received — ${invoice.invoiceNo}`,
+        text: `Dear ${invoice.patient.firstName},\n\nWe received your online payment of ${amount.toFixed(2)} for invoice ${invoice.invoiceNo}. Thank you!\n\n— City Care Hospital`,
+        html: `<p>Dear ${invoice.patient.firstName},</p><p>We received your online payment of <strong>${amount.toFixed(2)}</strong> for invoice <strong>${invoice.invoiceNo}</strong>.</p><p>Thank you!</p>`,
+      }).catch(() => {});
+    }
+  }
+
+  return updated;
+}
+
+export async function expireStripeCheckout(sessionId: string) {
+  const pending = await db.payment.findFirst({
+    where: { stripeSessionId: sessionId, status: "PENDING" },
+  });
+  if (pending) {
+    await db.payment.update({ where: { id: pending.id }, data: { status: "CANCELLED" } });
+  }
+}
+
+/** Sync a succeeded Stripe refund into the local ledger (reconciliation). */
+export async function syncStripeRefund(refund: {
+  id: string;
+  status: string;
+  payment_intent: string | null;
+  amount: number;
+  currency: string;
+}) {
+  if (refund.status !== "succeeded") return null;
+  const payment = await db.payment.findFirst({
+    where: { stripePaymentIntentId: refund.payment_intent },
+  });
+  if (!payment || payment.amount <= 0) return null;
+  if (payment.stripeRefundId === refund.id) return null; // already applied
+
+  const currency = refund.currency;
+  const amount = ZERO_DECIMAL_CURRENCIES.has(currency.toUpperCase())
+    ? refund.amount
+    : Math.round((refund.amount / 100) * 100) / 100;
+
+  const refundNo = await nextNumber("payment");
+  const applied = await db.$transaction(async (tx) => {
+    const created = await tx.payment.create({
+      data: {
+        paymentNo: refundNo,
+        invoiceId: payment.invoiceId,
+        amount: -amount,
+        method: "CARD",
+        status: "COMPLETED",
+        notes: `Stripe refund ${refund.id}`,
+        refundOfId: payment.id,
+        stripeRefundId: refund.id,
+        stripePaymentIntentId: payment.stripePaymentIntentId,
+        hospitalId: payment.hospitalId,
+      },
+    });
+    const refundedAgg = await tx.payment.aggregate({
+      where: { refundOfId: payment.id },
+      _sum: { amount: true },
+    });
+    if (Math.abs(refundedAgg._sum.amount ?? 0) >= payment.amount - EPSILON) {
+      await tx.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED" } });
+    }
+    await recomputeInvoicePaid(tx, payment.invoiceId);
+    return created;
+  });
+  return applied;
 }

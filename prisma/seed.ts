@@ -524,7 +524,9 @@ async function seedHr() {
     }
   }
   if (rows.length) {
-    await prisma.attendance.deleteMany({ where: { date: { startsWith: month } } });
+    await prisma.attendance.deleteMany({ where: { date: { startsWith: ymd(today).slice(0, 7) } } });
+    const earliest = rows[rows.length - 1].date;
+    await prisma.attendance.deleteMany({ where: { date: { gte: earliest } } });
     await prisma.attendance.createMany({ data: rows });
   }
   console.log(`✔ ${rows.length} attendance records for ${month}`);
@@ -853,6 +855,437 @@ async function seedPhase9() {
   }
 }
 
+// ============================================================================
+// Phase 10 — spec-scale dataset. Idempotent top-ups: each function only
+// creates the difference between the current count and the target.
+// ============================================================================
+
+const FIRST_NAMES = [
+  "James", "Emma", "Liam", "Olivia", "Noah", "Ava", "Ethan", "Sophia", "Mason", "Isabella",
+  "Lucas", "Mia", "Alexander", "Charlotte", "Daniel", "Amelia", "Henry", "Harper", "Sebastian", "Evelyn",
+  "Jack", "Abigail", "Owen", "Emily", "Gabriel", "Ella", "Julian", "Scarlett", "Leo", "Grace",
+  "Adam", "Layla", "Rayan", "Zoya", "Kabir", "Meera", "Arnav", "Diya", "Vihaan", "Ananya",
+  "Ibrahim", "Fatima", "Omar", "Hana", "Yusuf", "Noor", "Khalid", "Amira", "Tariq", "Sana",
+];
+
+const LAST_NAMES = [
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+  "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+  "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+  "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+  "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts",
+];
+
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const INSURERS = ["BlueShield", "Aetna", "Cigna", "Medicare", "Medicaid", "UnitedHealth", "Humana"];
+const ALLERGY_POOL = ["Penicillin", "Sulfa", "Aspirin", "Latex", "Peanuts", "Iodine", "Codeine"];
+
+const DEPT_POOL = [
+  { name: "Dermatology", code: "DERM" },
+  { name: "ENT", code: "ENT" },
+  { name: "Ophthalmology", code: "OPHTH" },
+  { name: "Psychiatry", code: "PSYCH" },
+  { name: "Gastroenterology", code: "GASTRO" },
+  { name: "Pulmonology", code: "PULM" },
+];
+
+const MEDICINE_POOL = [
+  "Amlodipine", "Metformin", "Atorvastatin", "Lisinopril", "Omeprazole", "Paracetamol", "Ibuprofen",
+  "Amoxicillin", "Azithromycin", "Ciprofloxacin", "Ceftriaxone", "Metronidazole", "Doxycycline",
+  "Fluoxetine", "Sertraline", "Escitalopram", "Alprazolam", "Lorazepam", "Diazepam", "Olanzapine",
+  "Prednisone", "Hydrocortisone", "Dexamethasone", "Salbutamol", "Budesonide", "Montelukast",
+  "Cetirizine", "Loratadine", "Fexofenadine", "Diphenhydramine", "Losartan", "Telmisartan",
+  "Valsartan", "Metoprolol", "Propranolol", "Carvedilol", "Furosemide", "Spironolactone",
+  "Hydrochlorothiazide", "Insulin Glargine", "Insulin Lispro", "Glimepiride", "Sitagliptin",
+  "Warfarin", "Apixaban", "Rivaroxaban", "Clopidogrel", "Aspirin", "Nitroglycerin",
+];
+
+const MEDICINE_CATEGORIES = ["ANALGESIC", "ANTIBIOTIC", "ANTIPYRETIC", "ANTACID", "VITAMIN", "ANTIALLERGIC", "CARDIAC", "DIABETIC", "RESPIRATORY", "GENERAL"];
+
+const DIAGNOSIS_POOL = [
+  "Hypertension", "Type 2 diabetes", "Lower respiratory infection", "Acute gastroenteritis",
+  "Migraine", "Cervical spondylosis", "Iron deficiency anemia", "Urinary tract infection",
+  "Gastroesophageal reflux", "Hypothyroidism", "Osteoarthritis", "Acute bronchitis",
+  "Dengue fever", "Cellulitis", "Peptic ulcer disease", "Asthma exacerbation",
+];
+
+const LAB_TESTS = [
+  { name: "Complete Blood Count", code: "CBC", unit: "—", normalRange: "See report" },
+  { name: "Hemoglobin", code: "HB", unit: "g/dL", normalRange: "13.0–17.0" },
+  { name: "Blood Sugar (Fasting)", code: "FBS", unit: "mg/dL", normalRange: "70–100" },
+  { name: "HbA1c", code: "A1C", unit: "%", normalRange: "4.0–5.6" },
+  { name: "Total Cholesterol", code: "CHOL", unit: "mg/dL", normalRange: "<200" },
+  { name: "Liver Function (ALT)", code: "ALT", unit: "U/L", normalRange: "7–56" },
+  { name: "Kidney Function (Creatinine)", code: "CREAT", unit: "mg/dL", normalRange: "0.6–1.3" },
+  { name: "Thyroid (TSH)", code: "TSH", unit: "mIU/L", normalRange: "0.4–4.0" },
+  { name: "Urine Analysis", code: "UA", unit: "—", normalRange: "Normal" },
+  { name: "Lipid Profile", code: "LIPID", unit: "mg/dL", normalRange: "LDL <100" },
+];
+
+const STAFF_TITLES = ["Dr.", "Prof. Dr.", "Dr. (Maj)", "Asst. Prof. Dr."];
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function pad(n: number): string {
+  return String(n).padStart(4, "0");
+}
+
+/** Runs `fn` over items in bounded-parallel chunks (fast on remote DBs). */
+async function runBatch<T>(items: T[], fn: (item: T) => Promise<unknown>, size = 25): Promise<void> {
+  for (let i = 0; i < items.length; i += size) {
+    await Promise.all(items.slice(i, i + size).map(fn));
+  }
+}
+
+async function topUpPatients(target: number) {
+  const hospital = await prisma.hospital.findFirst();
+  const existing = await prisma.patient.count();
+  const need = target - existing;
+  if (need <= 0) {
+    console.log(`✔ patients (already ${existing})`);
+    return;
+  }
+  const rows = Array.from({ length: need }, (_, i) => {
+    const no = existing + i + 1;
+    return {
+      patientNo: `PT-${pad(no)}`,
+      firstName: pick(FIRST_NAMES),
+      lastName: pick(LAST_NAMES),
+      dob: new Date(Date.now() - (18 + Math.floor(Math.random() * 60)) * 365.25 * 86400_000),
+      bloodGroup: pick(BLOOD_GROUPS),
+      phone: `+1 555 300 0${String(no).padStart(4, "0")}`,
+      allergies: Math.random() < 0.25 ? pick(ALLERGY_POOL) : null,
+      insuranceProvider: Math.random() < 0.7 ? pick(INSURERS) : null,
+      hospitalId: hospital?.id ?? null,
+    };
+  });
+  await runBatch(rows, (data) => prisma.patient.create({ data }));
+  console.log(`✔ +${need} patients (total ${target})`);
+}
+
+async function topUpDepartments(target: number) {
+  const existing = await prisma.department.count();
+  const need = target - existing;
+  if (need <= 0) {
+    console.log(`✔ departments (already ${existing})`);
+    return;
+  }
+  for (let i = 0; i < need; i++) {
+    const d = DEPT_POOL[i];
+    if (!d) break;
+    await prisma.department.create({
+      data: { name: d.name, code: d.code, description: `${d.name} department`, hospitalId: (await prisma.hospital.findFirst())?.id ?? null },
+    });
+  }
+  console.log(`✔ +${Math.min(need, DEPT_POOL.length)} departments`);
+}
+
+async function topUpDoctors(target: number) {
+  const hospital = await prisma.hospital.findFirst();
+  const departments = await prisma.department.findMany();
+  const role = await prisma.role.findUnique({ where: { name: "DOCTOR" } });
+  if (!role) return;
+  const existing = await prisma.doctor.count();
+  const need = target - existing;
+  if (need <= 0) {
+    console.log(`✔ doctors (already ${existing})`);
+    return;
+  }
+  for (let i = 0; i < need; i++) {
+    const no = existing + i + 1;
+    const email = `doctor${no}@hospital.com`;
+    if (await prisma.user.findUnique({ where: { email } })) continue;
+    const first = pick(FIRST_NAMES);
+    const last = pick(LAST_NAMES);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        firstName: first,
+        lastName: last,
+        title: pick(STAFF_TITLES),
+        passwordHash: await hashPassword("Doctor@1234"),
+        roleId: role.id,
+        hospitalId: hospital?.id ?? null,
+        emailVerified: true,
+      },
+    });
+    const dept = departments[no % departments.length];
+    await prisma.doctor.create({
+      data: {
+        userId: user.id,
+        departmentId: dept?.id ?? null,
+        specialization: dept?.name ?? "General Medicine",
+        qualification: "MD",
+        experienceYears: 2 + (no % 25),
+        consultationFee: 60 + (no % 15) * 15,
+        licenseNumber: `MD-SC-${10000 + no}`,
+        available: true,
+      },
+    });
+  }
+  console.log(`✔ +${need} doctors (total ${target})`);
+}
+
+async function topUpNurses(target: number) {
+  const hospital = await prisma.hospital.findFirst();
+  const departments = await prisma.department.findMany();
+  const role = await prisma.role.findUnique({ where: { name: "NURSE" } });
+  if (!role) return;
+  const existing = await prisma.nurse.count();
+  const need = target - existing;
+  if (need <= 0) {
+    console.log(`✔ nurses (already ${existing})`);
+    return;
+  }
+  for (let i = 0; i < need; i++) {
+    const no = existing + i + 1;
+    const email = `nurse${no}@hospital.com`;
+    if (await prisma.user.findUnique({ where: { email } })) continue;
+    const first = pick(FIRST_NAMES);
+    const last = pick(LAST_NAMES);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        firstName: first,
+        lastName: last,
+        passwordHash: await hashPassword("Nurse@1234"),
+        roleId: role.id,
+        hospitalId: hospital?.id ?? null,
+        emailVerified: true,
+      },
+    });
+    const dept = departments[no % departments.length];
+    await prisma.nurse.create({
+      data: {
+        userId: user.id,
+        departmentId: dept?.id ?? null,
+        ward: `Ward ${String.fromCharCode(65 + (no % 5))}`,
+        shift: pick(["DAY", "NIGHT", "EVENING"]),
+        licenseNo: `RN-${50000 + no}`,
+        designation: pick(["Staff Nurse", "Senior Nurse", "Charge Nurse"]),
+      },
+    });
+  }
+  console.log(`✔ +${need} nurses (total ${target})`);
+}
+
+async function topUpMedicines(target: number) {
+  const hospital = await prisma.hospital.findFirst();
+  const existing = await prisma.medicine.count();
+  const need = target - existing;
+  if (need <= 0) {
+    console.log(`✔ medicines (already ${existing})`);
+    return;
+  }
+  const rows = Array.from({ length: need }, (_, i) => {
+    const no = existing + i + 1;
+    return {
+      name: `${MEDICINE_POOL[no % MEDICINE_POOL.length]}${no > MEDICINE_POOL.length ? " XR" : ""} ${10 + (no % 8) * 10}mg`,
+      category: pick(MEDICINE_CATEGORIES),
+      price: Math.round((2 + Math.random() * 90) * 100) / 100,
+      stock: Math.floor(Math.random() * 450) + 10,
+      reorderLevel: 10 + Math.floor(Math.random() * 40),
+      expiryDate: new Date(Date.now() + (90 + Math.floor(Math.random() * 700)) * 86400_000),
+      hospitalId: hospital?.id ?? null,
+    };
+  });
+  await runBatch(rows, (data) => prisma.medicine.create({ data }));
+  console.log(`✔ +${need} medicines (total ${target})`);
+}
+
+async function topUpAppointments(target: number) {
+  const hospital = await prisma.hospital.findFirst();
+  const doctors = await prisma.doctor.findMany();
+  const patients = await prisma.patient.findMany();
+  const admin = await prisma.user.findUnique({ where: { email: "hospital@hospital.com" } });
+  if (!doctors.length || !patients.length) return;
+  const existing = await prisma.appointment.count();
+  const need = target - existing;
+  if (need <= 0) {
+    console.log(`✔ appointments (already ${existing})`);
+    return;
+  }
+  const slots = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "14:00", "14:30", "15:00", "15:30", "16:00"];
+  const statusPool = ["CONFIRMED", "CONFIRMED", "PENDING", "COMPLETED", "COMPLETED", "CANCELLED", "MISSED"];
+  const rows = Array.from({ length: need }, (_, i) => {
+    const no = existing + i + 1;
+    const doctor = pick(doctors);
+    const slot = pick(slots);
+    const [hh, mm] = slot.split(":").map(Number);
+    const startMin = hh * 60 + mm;
+    const endMin = startMin + 30;
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + Math.floor(Math.random() * 61) - 30);
+    return {
+      tokenNo: `TKN-${pad(no)}`,
+      patientId: pick(patients).id,
+      doctorId: doctor.id,
+      departmentId: doctor.departmentId,
+      date,
+      startTime: slot,
+      endTime: `${String(Math.floor(endMin / 60)).padStart(2, "0")}:${String(endMin % 60).padStart(2, "0")}`,
+      type: pick(["ONLINE", "WALKIN", "FOLLOWUP"]),
+      status: pick(statusPool),
+      createdById: admin?.id ?? null,
+    };
+  });
+  await runBatch(rows, (data) => prisma.appointment.create({ data }));
+  console.log(`✔ +${need} appointments (total ${target})`);
+}
+
+async function topUpInvoices(target: number) {
+  const hospital = await prisma.hospital.findFirst();
+  const patients = await prisma.patient.findMany();
+  const admin = await prisma.user.findUnique({ where: { email: "hospital@hospital.com" } });
+  if (!patients.length) return;
+  const existing = await prisma.invoice.count();
+  const need = target - existing;
+  if (need <= 0) {
+    console.log(`✔ invoices (already ${existing})`);
+    return;
+  }
+  const invoices = Array.from({ length: need }, (_, i) => {
+    const no = existing + i + 1;
+    const subtotal = Math.round((50 + Math.random() * 1950) * 100) / 100;
+    const taxRate = hospital?.taxRate ?? 0;
+    const total = Math.round(subtotal * (1 + taxRate / 100) * 100) / 100;
+    const status = pick(["PENDING", "PENDING", "PARTIAL", "PAID", "PAID", "PAID", "CANCELLED"]);
+    const paid = status === "PAID" ? total : status === "PARTIAL" ? Math.round(total * (0.3 + Math.random() * 0.4) * 100) / 100 : 0;
+    const createdAt = new Date(Date.now() - Math.floor(Math.random() * 120) * 86400_000);
+    return {
+      no,
+      invoiceNo: `INV-${pad(no)}`,
+      patientId: pick(patients).id,
+      subtotal,
+      taxRate,
+      total,
+      paid,
+      status,
+      notes: null,
+      issuedById: admin?.id ?? null,
+      hospitalId: hospital?.id ?? null,
+      createdAt,
+    };
+  });
+  await runBatch(invoices, async (inv) => {
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoiceNo: inv.invoiceNo,
+        patientId: inv.patientId,
+        subtotal: inv.subtotal,
+        taxRate: inv.taxRate,
+        total: inv.total,
+        paid: inv.paid,
+        status: inv.status,
+        notes: inv.notes,
+        issuedById: inv.issuedById,
+        hospitalId: inv.hospitalId,
+        createdAt: inv.createdAt,
+      },
+    });
+    if (inv.paid > 0) {
+      await prisma.payment.create({
+        data: {
+          paymentNo: `PAY-${pad(inv.no)}`,
+          invoiceId: invoice.id,
+          amount: inv.paid,
+          method: pick(["CASH", "CARD", "BANK_TRANSFER", "INSURANCE"]),
+          receivedById: admin?.id ?? null,
+          paidAt: new Date(inv.createdAt.getTime() + 86400_000),
+          hospitalId: hospital?.id ?? null,
+        },
+      });
+    }
+  });
+  console.log(`✔ +${need} invoices (total ${target})`);
+}
+
+async function topUpAdmissions(target: number) {
+  const hospital = await prisma.hospital.findFirst();
+  const patients = await prisma.patient.findMany();
+  const doctors = await prisma.doctor.findMany();
+  if (!patients.length || !doctors.length) return;
+  const existing = await prisma.admission.count();
+  const need = target - existing;
+  if (need <= 0) {
+    console.log(`✔ admissions (already ${existing})`);
+    return;
+  }
+  const rows = Array.from({ length: need }, (_, i) => {
+    const no = existing + i + 1;
+    const roll = Math.random();
+    const status = roll < 0.25 ? "DISCHARGED" : roll < 0.3 ? "TRANSFERRED" : "ADMITTED";
+    const admittedAt = new Date(Date.now() - Math.floor(Math.random() * 90) * 86400_000);
+    return {
+      admissionNo: `IPD-${pad(no)}`,
+      patientId: pick(patients).id,
+      doctorId: pick(doctors).id,
+      bedId: null,
+      status,
+      diagnosis: pick(DIAGNOSIS_POOL),
+      notes: Math.random() < 0.5 ? "Admitted for observation and further evaluation." : null,
+      admittedAt,
+      dischargeAt: status === "DISCHARGED" ? new Date(admittedAt.getTime() + (2 + Math.floor(Math.random() * 10)) * 86400_000) : null,
+      hospitalId: hospital?.id ?? null,
+    };
+  });
+  await runBatch(rows, (data) => prisma.admission.create({ data }));
+  console.log(`✔ +${need} admissions (total ${target})`);
+}
+
+async function topUpLabOrders(target: number) {
+  const hospital = await prisma.hospital.findFirst();
+  const patients = await prisma.patient.findMany();
+  const doctors = await prisma.doctor.findMany();
+  const admin = await prisma.user.findUnique({ where: { email: "hospital@hospital.com" } });
+  if (!patients.length || !doctors.length) return;
+  const existing = await prisma.labOrder.count();
+  const need = target - existing;
+  if (need <= 0) {
+    console.log(`✔ lab orders (already ${existing})`);
+    return;
+  }
+  const rows = Array.from({ length: need }, (_, i) => {
+    const no = existing + i + 1;
+    const testCount = 1 + Math.floor(Math.random() * 3);
+    const tests = Array.from({ length: testCount }, () => pick(LAB_TESTS));
+    const status = pick(["COMPLETED", "COMPLETED", "COMPLETED", "SAMPLE_COLLECTED", "ORDERED", "CANCELLED"]);
+    const results = status === "COMPLETED"
+      ? JSON.stringify(tests.map((t) => ({ testId: t.code, name: t.name, value: String(50 + Math.floor(Math.random() * 150)), unit: t.unit, normalRange: t.normalRange, flag: Math.random() < 0.2 ? "HIGH" : "NORMAL" })))
+      : "[]";
+    return {
+      orderNo: `LAB-${pad(no)}`,
+      patientId: pick(patients).id,
+      doctorId: pick(doctors).id,
+      status,
+      tests: JSON.stringify(tests.map((t) => ({ testId: t.code, name: t.name, code: t.code, unit: t.unit, normalRange: t.normalRange }))),
+      results,
+      createdById: admin?.id ?? null,
+      hospitalId: hospital?.id ?? null,
+      createdAt: new Date(Date.now() - Math.floor(Math.random() * 60) * 86400_000),
+    };
+  });
+  await runBatch(rows, (data) => prisma.labOrder.create({ data }));
+  console.log(`✔ +${need} lab orders (total ${target})`);
+}
+
+async function seedPhase10() {
+  console.log("\nSeeding spec-scale dataset…");
+  await topUpDepartments(10);
+  await topUpPatients(150);
+  await topUpDoctors(30);
+  await topUpNurses(20);
+  await topUpMedicines(100);
+  await topUpAppointments(500);
+  await topUpInvoices(200);
+  await topUpAdmissions(100);
+  await topUpLabOrders(50);
+  console.log("Spec-scale dataset complete.");
+}
+
 async function main() {
   console.log("Seeding HMS database…");
 
@@ -883,6 +1316,7 @@ async function main() {
   await seedHr();
   await seedNotifications();
   await seedPhase9();
+  await seedPhase10();
 
   console.log("Seeding complete.");
 }

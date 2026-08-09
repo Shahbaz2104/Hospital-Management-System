@@ -18,6 +18,10 @@ export const medicalRecordCreateSchema = z.object({
   doctorId: z.string().optional(),
   entityType: z.string().optional(),
   entityId: z.string().optional(),
+  files: z
+    .array(z.object({ name: z.string().trim().min(1).max(200), url: z.string().url() }))
+    .max(10)
+    .optional(),
 });
 
 export type MedicalRecordCreateInput = z.infer<typeof medicalRecordCreateSchema>;

@@ -77,7 +77,7 @@ export async function middleware(req: NextRequest) {
   const isApi = pathname.startsWith("/api");
   const isAuthApi = pathname.startsWith("/api/auth");
   // Public by design: anonymous QR verification of prescription PDFs.
-  const isPublicApi = pathname === "/api/prescriptions/verify";
+  const isPublicApi = pathname === "/api/prescriptions/verify" || pathname === "/api/webhooks/stripe";
 
   const accessToken = req.cookies.get("hms_access")?.value;
   const refreshToken = req.cookies.get("hms_refresh")?.value;

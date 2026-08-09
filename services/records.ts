@@ -47,6 +47,7 @@ export async function createRecord(actor: { id: string }, input: MedicalRecordCr
       doctorId: input.doctorId || null,
       entityType: input.entityType || null,
       entityId: input.entityId || null,
+      files: input.files && input.files.length > 0 ? JSON.stringify(input.files) : null,
     },
     include: {
       patient: { select: { id: true, patientNo: true, firstName: true, lastName: true } },

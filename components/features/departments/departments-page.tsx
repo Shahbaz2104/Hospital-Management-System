@@ -184,6 +184,7 @@ export function DepartmentsPage() {
           variant="ghost"
           size="icon"
           className="text-muted-foreground hover:text-destructive"
+          aria-label="Delete department"
           onClick={() => onDelete(row.original.id, row.original.name)}
         >
           <Trash2 className="size-4" />
