@@ -246,6 +246,18 @@ Build order; each phase: schema → validate/generate → validators → service
 - **Backup script** (uncommitted → follows) — `npm run db:backup` (mongodump → `backups/<timestamp>/dump.gz`, gzip archive, gitignored).
 - **Status** — Phase 10 complete (browser verification intentionally skipped per user). **All planned work done.**
 
+### Session 13 — UI redesign: "The Ward Board" identity
+
+**2026-08-09**
+
+- Full visual re-identity, deliberately *not* the blue-enterprise default. Concept: the system as a hospital **ward board** — charts, monitors, and patient strips.
+- **Palette** — scrub-teal primary (`oklch 0.523 0.119 176`), clinical-paper canvas (green-tinted white), teal ink, vital-coral reserved for destructive/emergency only; dark mode = "night ward" deep teal with monitor-mint primary. All tokens in `app/globals.css` (light + dark), charts switched to a teal ramp.
+- **Type** — display/headings: **Space Grotesk** (`--font-display`, wired to `font-heading`); body: IBM Plex Sans (kept); data discipline: IBM Plex Mono for every number, label stamp, token, and table header.
+- **Signature motif — the ECG trace** (`components/shared/vitals-line.tsx`): one animated heartbeat polyline used quietly in three places — the sidebar brand chip, a slow monitor sweep under every `PageHeader`, and a static tick watermark on stat cards. `app/icon.svg` brand glyph; root loading shows a pulse line. Respects `prefers-reduced-motion` (static fallback).
+- **Structure** — `PageHeader` is now a chart sheet header: auto-derived mono section stamp (Billing → FINANCE, Patients → CLINICAL… from `constants/nav`), Space Grotesk title, hairline + ECG rule; zero per-page edits needed. Data-table headers now mono uppercase. Stat cards read as vitals monitors (mono label, tabular display number, hairline top rule). Dashboard queue rows are ward-board rows: status tick, mono token chip, time. Auth hero: night-ward teal with a running ECG strip.
+- **No API/behaviour changes** — component props unchanged; gates green (typecheck clean, lint 0 errors / 6 pre-existing warnings, build passes). Browser verification skipped per user; commit follows.
+
+
 - **Remaining** — Phase 10 (polish: Cloudinary uploads, PWA, a11y/perf, spec-scale seed, backup, final gates + browser verification + README/PROGRESS final update).
 
 ### Session 7 — Phase 6b: Insurance page UI

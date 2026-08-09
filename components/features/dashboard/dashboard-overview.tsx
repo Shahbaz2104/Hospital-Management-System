@@ -60,17 +60,17 @@ type DashboardSummary = {
 };
 
 const STATUS_META: Record<string, { label: string; className: string; color: string }> = {
-  PENDING: { label: "Pending", className: "bg-amber-100 text-amber-800", color: "#f59e0b" },
-  CONFIRMED: { label: "Confirmed", className: "bg-blue-100 text-blue-800", color: "#3b82f6" },
-  COMPLETED: { label: "Completed", className: "bg-emerald-100 text-emerald-800", color: "#10b981" },
-  CANCELLED: { label: "Cancelled", className: "bg-muted text-muted-foreground", color: "#94a3b8" },
-  MISSED: { label: "Missed", className: "bg-red-100 text-red-800", color: "#ef4444" },
+  PENDING: { label: "Pending", className: "bg-amber-100 text-amber-800", color: "#D98A2B" },
+  CONFIRMED: { label: "Confirmed", className: "bg-teal-100 text-teal-800", color: "#0E7C6B" },
+  COMPLETED: { label: "Completed", className: "bg-emerald-100 text-emerald-800", color: "#2E9E6B" },
+  CANCELLED: { label: "Cancelled", className: "bg-muted text-muted-foreground", color: "#8FA3A0" },
+  MISSED: { label: "Missed", className: "bg-red-100 text-red-800", color: "#D9553F" },
 };
 
 const BED_META: Record<string, { label: string; color: string }> = {
-  OCCUPIED: { label: "Occupied", color: "#3b82f6" },
-  AVAILABLE: { label: "Available", color: "#10b981" },
-  CLEANING: { label: "Cleaning", color: "#f59e0b" },
+  OCCUPIED: { label: "Occupied", color: "#0E7C6B" },
+  AVAILABLE: { label: "Available", color: "#2E9E6B" },
+  CLEANING: { label: "Cleaning", color: "#D98A2B" },
 };
 
 const tooltipStyle = {
@@ -218,8 +218,8 @@ export function DashboardOverview() {
                   >
                     <defs>
                       <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+                        <stop offset="0%" style={{ stopColor: "var(--chart-1)" }} stopOpacity={0.32} />
+                        <stop offset="100%" style={{ stopColor: "var(--chart-1)" }} stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -244,7 +244,7 @@ export function DashboardOverview() {
                     <Area
                       type="monotone"
                       dataKey="count"
-                      stroke="#3b82f6"
+                      stroke="var(--chart-1)"
                       strokeWidth={2.5}
                       fill="url(#trendFill)"
                       animationDuration={1000}
@@ -368,13 +368,18 @@ export function DashboardOverview() {
                   return (
                     <div
                       key={a.id}
-                      className="flex items-center gap-4 py-3"
+                      className="group flex items-center gap-4 py-3 pl-2"
                     >
-                      <div className="w-14 text-center">
-                        <p className="font-mono text-sm font-semibold tabular-nums leading-none">
+                      <span
+                        aria-hidden
+                        className="w-[3px] shrink-0 self-stretch rounded-full"
+                        style={{ background: meta.color }}
+                      />
+                      <div className="w-14 shrink-0 text-center">
+                        <p className="font-mono text-sm font-medium tabular-nums leading-none">
                           {a.startTime}
                         </p>
-                        <p className="mt-1 text-[11px] text-muted-foreground">
+                        <p className="mt-1.5 inline-block rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
                           {a.tokenNo}
                         </p>
                       </div>

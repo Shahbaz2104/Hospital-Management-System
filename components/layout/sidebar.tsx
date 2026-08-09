@@ -3,13 +3,36 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, ChevronsLeft } from "lucide-react";
+import { ChevronsLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navConfig } from "@/constants/nav";
 import { can } from "@/lib/auth/can";
 import type { SessionUser } from "@/lib/auth/session";
 
 import { Button } from "@/components/ui/button";
+
+/** Brand mark: scrub-teal ward chip with the ECG trace. */
+function BrandMark({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary text-primary-foreground shadow-[0_2px_10px_-2px_oklch(0.35_0.1_176/0.5)]",
+        className
+      )}
+    >
+      <svg viewBox="0 0 32 32" aria-hidden className="size-6">
+        <path
+          d="M3 16h4l1.2 0 .9-2.8 1.2 5.6.9-4 1.2 1.2h5l1.2 0 .9-3.9 1.2 7.3.9-4.5 1.2 1.2h5l1.2 0 .9-2.8 1.2 5.6.9-4 1.2 1.2h2.4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
 
 export function Sidebar({
   user,
@@ -32,18 +55,18 @@ export function Sidebar({
     >
       <div
         className={cn(
-          "flex h-16 items-center gap-2 border-b px-4",
+          "flex h-16 items-center gap-3 border-b px-4",
           collapsed && "justify-center px-0"
         )}
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <Activity className="size-4" />
-        </span>
+        <BrandMark />
         {!collapsed && (
           <div className="leading-tight">
-            <p className="text-sm font-semibold">HealthCare HMS</p>
-            <p className="text-[11px] text-muted-foreground">
-              Hospital Management
+            <p className="font-heading text-[15px] font-semibold tracking-tight">
+              HealthCare HMS
+            </p>
+            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              Ward operations
             </p>
           </div>
         )}
@@ -58,7 +81,7 @@ export function Sidebar({
           return (
             <div key={section.title ?? i} className="space-y-1">
               {section.title && !collapsed && (
-                <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                <p className="px-3 pb-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/80">
                   {section.title}
                 </p>
               )}
@@ -72,22 +95,29 @@ export function Sidebar({
                     href={item.href}
                     title={collapsed ? item.title : undefined}
                     className={cn(
-                      "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      "group relative flex items-center gap-3 rounded-md px-3 py-2 text-[13.5px] font-medium transition-colors",
                       collapsed && "justify-center px-0",
                       active
-                        ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
-                        : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
+                        ? "bg-primary/[0.08] font-semibold text-primary dark:bg-primary/15"
+                        : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground"
                     )}
                   >
                     {!collapsed && active && (
-                      <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+                      <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
                     )}
-                    {IconComp && <IconComp className="size-4 shrink-0" />}
+                    {IconComp && (
+                      <IconComp
+                        className={cn(
+                          "size-4 shrink-0",
+                          active && "text-primary"
+                        )}
+                      />
+                    )}
                     {!collapsed && (
                       <>
                         <span className="flex-1 truncate">{item.title}</span>
                         {item.badge && (
-                          <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+                          <span className="rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] font-medium text-primary-foreground">
                             {item.badge}
                           </span>
                         )}

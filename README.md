@@ -105,7 +105,7 @@ User, Role, Permission, Patient, Doctor, Department, Appointment, Admission, Dis
 
 ## Design
 
-Enterprise ERP look — clean, professional, minimal, white with blue accents, responsive across desktop / tablet / mobile. Dashboard-focused with Recharts analytics. Live progress and decisions are tracked in [`PROGRESS.md`](./PROGRESS.md).
+"The Ward Board" identity — the system reads like a hospital ward board: scrub-teal primary on a clinical-paper canvas (dark mode: night ward with monitor-mint), **Space Grotesk** display face paired with IBM Plex Sans, and IBM Plex Mono for every data readout. The signature motif is a quiet ECG pulse trace used in the brand mark, under page headers, and on stat cards. Structure follows chart-sheet rules: mono section stamps (FINANCE, CLINICAL…), hairline rules, and token-style identifiers. Responsive across desktop / tablet / mobile, with reduced-motion fallbacks. Live progress and decisions are tracked in [`PROGRESS.md`](./PROGRESS.md).
 
 ## Motion
 
