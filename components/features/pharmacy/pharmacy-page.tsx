@@ -236,7 +236,7 @@ export function PharmacyPage() {
         table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
         th{text-align:left;padding:6px 0;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
         td{padding:6px 0;border-bottom:1px solid #f1f5f9}
-        .mono{font-family:ui-monospace,monospace;font-size:11px;color:#2563eb;font-weight:600}
+        .mono{font-family:ui-monospace,monospace;font-size:11px;color:#0E7C6B;font-weight:600}
         .foot{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 20px;font-size:10px;color:#94a3b8;text-align:center}
       </style></head><body><div class="sheet">
         <div class="head"><h1>City Care Hospital</h1><p>Pharmacy Receipt</p></div>

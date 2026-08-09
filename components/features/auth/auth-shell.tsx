@@ -4,7 +4,6 @@ import { HeartHandshake, ShieldCheck, Zap } from "lucide-react";
 
 import { AnimatedText } from "@/components/motion/animated-text";
 import { Reveal } from "@/components/motion/reveal";
-import { VitalsLine } from "@/components/shared/vitals-line";
 
 const perks = [
   { icon: ShieldCheck, text: "Role-based access control for every team" },
@@ -36,11 +35,7 @@ export function AuthShell({
               "radial-gradient(700px 480px at 12% 6%, oklch(0.55 0.11 175 / 0.4), transparent 62%), radial-gradient(560px 420px at 92% 92%, oklch(0.45 0.1 175 / 0.22), transparent 60%)",
           }}
         />
-        <div aria-hidden className="absolute inset-x-0 top-0 h-10 border-b border-white/10">
-          <div className="relative mx-10 h-full text-primary/90">
-            <VitalsLine className="h-full" flow />
-          </div>
-        </div>
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
 
         <div className="relative flex items-center gap-2.5">
           <span className="flex size-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">

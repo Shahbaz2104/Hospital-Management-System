@@ -308,10 +308,10 @@ export function DashboardOverview() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <p className="text-3xl font-semibold tabular-nums tracking-tight">
+                    <p className="font-heading text-3xl font-semibold tabular-nums tracking-tight">
                       {Math.round(totalBeds > 0 ? (occupied / totalBeds) * 100 : 0)}%
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="mt-0.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
                       {occupied} of {totalBeds} occupied
                     </p>
                   </div>

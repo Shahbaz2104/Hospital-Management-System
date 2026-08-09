@@ -148,13 +148,13 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 
 const BADGES: Record<string, { label: string; cls: string }> = {
   ACTIVE: { label: "Active", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
-  INACTIVE: { label: "Inactive", cls: "bg-slate-500/10 text-slate-500 dark:text-slate-400" },
+  INACTIVE: { label: "Inactive", cls: "bg-slate-500/10 text-slate-500 dark:text-slate-400 dark:text-slate-400" },
   ON_LEAVE: { label: "On leave", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
   TERMINATED: { label: "Terminated", cls: "bg-destructive/10 text-destructive" },
   PRESENT: { label: "Present", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   ABSENT: { label: "Absent", cls: "bg-destructive/10 text-destructive" },
   HALF_DAY: { label: "Half day", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  LEAVE: { label: "Leave", cls: "bg-sky-500/10 text-sky-600 dark:text-sky-400" },
+  LEAVE: { label: "Leave", cls: "bg-teal-500/10 text-teal-700 dark:text-teal-300" },
   PENDING: { label: "Pending", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
   APPROVED: { label: "Approved", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   REJECTED: { label: "Rejected", cls: "bg-destructive/10 text-destructive" },
@@ -791,7 +791,7 @@ function AttendanceTab({
                       <td className="text-center tabular-nums text-emerald-600 dark:text-emerald-400">{s.PRESENT}</td>
                       <td className="text-center tabular-nums text-destructive">{s.ABSENT}</td>
                       <td className="text-center tabular-nums text-amber-600 dark:text-amber-400">{s.HALF_DAY}</td>
-                      <td className="text-center tabular-nums text-sky-600 dark:text-sky-400">{s.LEAVE}</td>
+                      <td className="text-center tabular-nums text-teal-600 dark:text-teal-400">{s.LEAVE}</td>
                     </tr>
                   ))}
                 </tbody>

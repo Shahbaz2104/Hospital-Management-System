@@ -75,8 +75,8 @@ export function GlobalSearch() {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             ref={inputRef}
-            placeholder="Search patients, doctors, appointments, medicines, departments, staff… (press /)"
-            className="pl-9"
+            placeholder="Search patients, tokens, invoices, medicines…"
+            className="pl-9 pr-10 font-mono text-[13px] tracking-tight"
             aria-label="Global search"
             value={query}
             onChange={(e) => {
@@ -94,6 +94,9 @@ export function GlobalSearch() {
               if (e.key === "Escape") setOpen(false);
             }}
           />
+          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-sm border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+            /
+          </kbd>
         </div>
       </PopoverTrigger>
       <PopoverContent

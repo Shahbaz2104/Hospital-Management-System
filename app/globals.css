@@ -159,62 +159,6 @@
   color: var(--primary);
 }
 
-/* Hairline chart rule with a faint ECG strip reading through it.
-   Used under page headers — the monitor trace of the ward board. */
-.chart-rule {
-  position: relative;
-  border-top: 1px solid var(--border);
-}
-.chart-rule::before {
-  content: "";
-  position: absolute;
-  inset: -1px 0 auto 0;
-  height: 2px;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    oklch(0.523 0.119 176.1 / 0) 30%,
-    oklch(0.523 0.119 176.1 / 0.35) 46%,
-    oklch(0.523 0.119 176.1 / 0.9) 50%,
-    oklch(0.523 0.119 176.1 / 0.35) 54%,
-    oklch(0.523 0.119 176.1 / 0) 70%,
-    transparent 100%
-  );
-  animation: hms-pulse-sweep 7s linear infinite;
-  mask-image: linear-gradient(to right, transparent 8%, black 45%, black 55%, transparent 92%);
-}
-.dark .chart-rule::before {
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    oklch(0.72 0.108 174.5 / 0) 30%,
-    oklch(0.72 0.108 174.5 / 0.3) 46%,
-    oklch(0.72 0.108 174.5 / 0.8) 50%,
-    oklch(0.72 0.108 174.5 / 0.3) 54%,
-    oklch(0.72 0.108 174.5 / 0) 70%,
-    transparent 100%
-  );
-}
-@keyframes hms-pulse-sweep {
-  0% {
-    transform: translateX(-8%);
-  }
-  100% {
-    transform: translateX(8%);
-  }
-}
-
-/* Slow monitor sweep for VitalsLine (dashoffset drift) */
-.vitals-flow {
-  transition: stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-  animation: hms-vitals-sweep 5.5s linear infinite;
-}
-@keyframes hms-vitals-sweep {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
 /* Lenis smooth scroll */
 html.lenis,
 html.lenis body {

@@ -33,7 +33,7 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 const TYPE_COLORS: Record<string, string> = {
   STOCK_ALERT: "text-amber-500",
   EXPIRY_ALERT: "text-orange-500",
-  APPOINTMENT: "text-sky-500",
+  APPOINTMENT: "text-teal-500",
 };
 
 export function NotificationBell() {

@@ -52,7 +52,7 @@ export function DischargesPage() {
         .head p{font-size:11px;opacity:.85;margin-top:2px}
         .body{padding:20px}
         .name{font-size:17px;font-weight:700}
-        .mono{font-family:ui-monospace,monospace;font-size:12px;color:#2563eb;font-weight:600;margin-top:2px}
+        .mono{font-family:ui-monospace,monospace;font-size:12px;color:#0E7C6B;font-weight:600;margin-top:2px}
         .line{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px dashed #e2e8f0}
         .line:last-child{border-bottom:none}
         .line span{color:#64748b}

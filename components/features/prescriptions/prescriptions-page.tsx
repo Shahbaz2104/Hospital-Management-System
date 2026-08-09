@@ -119,7 +119,7 @@ export function PrescriptionsPage() {
             const parsed = parseItems(p.items);
             return (
               <div key={p.id} className="flex items-start gap-4 border-b px-5 py-4 last:border-0">
-                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-teal-500/10 text-teal-700 dark:text-teal-300">
                   <Stethoscope className="size-4.5" />
                 </span>
                 <div className="min-w-0 flex-1">

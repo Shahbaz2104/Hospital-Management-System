@@ -54,7 +54,7 @@ const BED_LABELS: Record<string, string> = {
   CLEANING: "Cleaning",
 };
 
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#94a3b8"];
+const COLORS = ["#0E7C6B", "#2E9E6B", "#D98A2B", "#D9553F", "#3E8FA6", "#7A6FB0", "#8FA3A0"];
 
 const tooltipStyle = {
   borderRadius: 10,
@@ -107,15 +107,15 @@ export function AnalyticsPage() {
               <AreaChart data={data.monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#0E7C6B" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#0E7C6B" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v) => money(Number(v))} />
-                <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#3b82f6" strokeWidth={2} fill="url(#revFill)" />
+                <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#0E7C6B" strokeWidth={2} fill="url(#revFill)" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -134,7 +134,7 @@ export function AnalyticsPage() {
                 <Tooltip contentStyle={tooltipStyle} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="patients" name="Patients" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="appointments" name="Appointments" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="appointments" name="Appointments" fill="#0E7C6B" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

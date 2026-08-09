@@ -93,10 +93,10 @@ export function OpdQueue() {
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:ui-sans-serif,system-ui,sans-serif;background:#f1f5f9;padding:24px;color:#0f172a}
         .slip{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;max-width:340px;margin:0 auto}
-        .head{background:#2563eb;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}
+        .head{background:#0E7C6B;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}
         .head h1{font-size:15px;font-weight:700;letter-spacing:-0.01em}
         .head p{font-size:11px;opacity:.85;margin-top:2px}
-        .token{background:#fff;color:#2563eb;font-family:ui-monospace,monospace;font-weight:800;font-size:13px;padding:6px 10px;border-radius:8px}
+        .token{background:#fff;color:#0E7C6B;font-family:ui-monospace,monospace;font-weight:800;font-size:13px;padding:6px 10px;border-radius:8px}
         .body{padding:20px}
         .name{font-size:17px;font-weight:700}
         .mono{font-family:ui-monospace,monospace;font-size:12px;color:#64748b;margin-top:2px}

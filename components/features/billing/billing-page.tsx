@@ -126,9 +126,9 @@ type Summary = {
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   PENDING: { label: "Pending", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  PARTIAL: { label: "Partial", cls: "bg-sky-500/10 text-sky-600 dark:text-sky-400" },
+  PARTIAL: { label: "Partial", cls: "bg-teal-500/10 text-teal-700 dark:text-teal-300" },
   PAID: { label: "Paid", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
-  REFUNDED: { label: "Refunded", cls: "bg-slate-500/10 text-slate-500 dark:text-slate-400" },
+  REFUNDED: { label: "Refunded", cls: "bg-slate-500/10 text-slate-500 dark:text-slate-400 dark:text-slate-400" },
   CANCELLED: { label: "Cancelled", cls: "bg-destructive/10 text-destructive" },
 };
 
@@ -212,7 +212,7 @@ export function BillingPage() {
         .head{background:#0f172a;color:#fff;padding:20px 28px;display:flex;justify-content:space-between;align-items:flex-start}
         .head h1{font-size:18px;font-weight:800;letter-spacing:-.02em}
         .head p{font-size:11px;opacity:.8;margin-top:2px}
-        .invno{text-align:right;font-family:ui-monospace,monospace;font-size:13px;color:#93c5fd;font-weight:700}
+        .invno{text-align:right;font-family:ui-monospace,monospace;font-size:13px;color:#7FB8AE;font-weight:700}
         .body{padding:24px 28px}
         .row{display:flex;justify-content:space-between;font-size:12px;color:#64748b;padding:3px 0}
         table{width:100%;border-collapse:collapse;margin:16px 0}
@@ -917,7 +917,7 @@ function InvoiceDetailDialog({
                           <td className="px-4 py-2">
                             <span className="tabular-nums">{p.paymentNo}</span>
                             {p.status === "REFUNDED" && (
-                              <Badge className="ml-2 bg-slate-500/10 text-slate-500">Refunded</Badge>
+                              <Badge className="ml-2 bg-slate-500/10 text-slate-500 dark:text-slate-400">Refunded</Badge>
                             )}
                             <span className="block text-xs text-muted-foreground">
                               {format(new Date(p.paidAt), "MMM d, yyyy HH:mm")}

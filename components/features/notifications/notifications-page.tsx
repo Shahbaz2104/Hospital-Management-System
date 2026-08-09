@@ -39,7 +39,7 @@ type NotificationItem = {
 const TYPE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; cls: string }> = {
   STOCK_ALERT: { label: "Stock alert", icon: AlertTriangle, cls: "text-amber-500 bg-amber-500/10" },
   EXPIRY_ALERT: { label: "Expiry alert", icon: FlaskConical, cls: "text-orange-500 bg-orange-500/10" },
-  APPOINTMENT: { label: "Appointment", icon: CalendarClock, cls: "text-sky-500 bg-sky-500/10" },
+  APPOINTMENT: { label: "Appointment", icon: CalendarClock, cls: "text-teal-500 bg-teal-500/10" },
   BILLING: { label: "Billing", icon: Wallet, cls: "text-emerald-500 bg-emerald-500/10" },
   HR: { label: "HR", icon: ShieldCheck, cls: "text-violet-500 bg-violet-500/10" },
   SYSTEM: { label: "System", icon: Bell, cls: "text-primary bg-primary/10" },

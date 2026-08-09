@@ -253,14 +253,14 @@ export function PatientDetail() {
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:ui-sans-serif,system-ui,sans-serif;background:#f1f5f9;padding:24px;color:#0f172a}
         .card{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;max-width:340px;margin:0 auto}
-        .head{background:#2563eb;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}
+        .head{background:#0E7C6B;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}
         .head h1{font-size:15px;font-weight:700;letter-spacing:-0.01em}
         .head p{font-size:11px;opacity:.85;margin-top:2px}
         .body{padding:20px;display:flex;gap:18px}
         .qr{width:110px;height:110px;flex:none;border:1px solid #e2e8f0;border-radius:10px;padding:6px}
         .info{flex:1}
         .name{font-size:17px;font-weight:700}
-        .mono{font-family:ui-monospace,monospace;font-size:13px;color:#2563eb;font-weight:600;margin-top:2px}
+        .mono{font-family:ui-monospace,monospace;font-size:13px;color:#0E7C6B;font-weight:600;margin-top:2px}
         .meta{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:12px}
         .meta span{color:#64748b}
         .meta b{font-weight:600;color:#0f172a;display:block}

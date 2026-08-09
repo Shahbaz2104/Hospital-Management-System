@@ -249,12 +249,12 @@ export function LaboratoryPage() {
         .head p{font-size:11px;opacity:.85;margin-top:2px}
         .body{padding:20px}
         .name{font-size:17px;font-weight:700}
-        .mono{font-family:ui-monospace,monospace;font-size:12px;color:#2563eb;font-weight:600;margin-top:2px}
+        .mono{font-family:ui-monospace,monospace;font-size:12px;color:#0E7C6B;font-weight:600;margin-top:2px}
         table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
         th{text-align:left;padding:8px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
         td{padding:8px;border-bottom:1px solid #f1f5f9}
         .flag{font-weight:700}
-        .high{color:#dc2626}.low{color:#2563eb}.normal{color:#16a34a}
+        .high{color:#dc2626}.low{color:#0E7C6B}.normal{color:#2E9E6B}
         .foot{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 20px;font-size:10px;color:#94a3b8}
       </style></head><body><div class="sheet">
         <div class="head"><div><h1>City Care Hospital</h1><p>Laboratory Report</p></div><div style="text-align:right"><b style="font-size:13px">${o.orderNo}</b><p>${o.status === "COMPLETED" ? "Completed" : o.status.toLowerCase()}</p></div></div>

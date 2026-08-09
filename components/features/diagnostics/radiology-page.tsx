@@ -197,12 +197,12 @@ export function RadiologyPage() {
         .head p{font-size:11px;opacity:.85;margin-top:2px}
         .body{padding:20px}
         .name{font-size:17px;font-weight:700}
-        .mono{font-family:ui-monospace,monospace;font-size:12px;color:#2563eb;font-weight:600;margin-top:2px}
+        .mono{font-family:ui-monospace,monospace;font-size:12px;color:#0E7C6B;font-weight:600;margin-top:2px}
         .meta{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}
         .meta b{color:#64748b;font-weight:600;display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
         .section{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;margin:16px 0 6px}
         .findings{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap}
-        .link{display:block;font-size:12px;color:#2563eb;margin-top:4px}
+        .link{display:block;font-size:12px;color:#0E7C6B;margin-top:4px}
         .foot{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 20px;font-size:10px;color:#94a3b8}
       </style></head><body><div class="sheet">
         <div class="head"><div><h1>City Care Hospital</h1><p>Radiology Report</p></div><div style="text-align:right"><b style="font-size:13px">${o.orderNo}</b><p>${MODALITY_LABELS[o.modality] ?? o.modality}</p></div></div>
