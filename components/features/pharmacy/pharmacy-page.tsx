@@ -336,7 +336,7 @@ export function PharmacyPage() {
                     <tr key={m.id} className="border-b last:border-0">
                       <td className="px-4 py-3">
                         <p className="font-medium">{m.name}</p>
-                        <p className="font-mono text-xs text-muted-foreground">
+                        <p className="tabular-nums text-xs text-muted-foreground">
                           {m.barcode ?? m.genericName ?? m.manufacturer ?? "—"}
                         </p>
                       </td>
@@ -414,7 +414,7 @@ export function PharmacyPage() {
                   className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border bg-card p-4"
                 >
                   <div className="w-20 text-center">
-                    <p className="font-mono text-sm font-semibold tabular-nums leading-none">
+                    <p className="text-sm font-semibold tabular-nums leading-none">
                       {s.saleNo}
                     </p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
@@ -478,7 +478,7 @@ export function PharmacyPage() {
                     className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border bg-card p-4"
                   >
                     <div className="w-20 text-center">
-                      <p className="font-mono text-sm font-semibold tabular-nums leading-none">
+                      <p className="text-sm font-semibold tabular-nums leading-none">
                         {po.poNo}
                       </p>
                       <p className="mt-1 text-[11px] text-muted-foreground">

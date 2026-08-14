@@ -76,7 +76,7 @@ export function GlobalSearch() {
           <Input
             ref={inputRef}
             placeholder="Search patients, tokens, invoices, medicines…"
-            className="pl-9 pr-10 font-mono text-[13px] tracking-tight"
+            className="pl-9 pr-10 text-[13px]"
             aria-label="Global search"
             value={query}
             onChange={(e) => {
@@ -94,7 +94,7 @@ export function GlobalSearch() {
               if (e.key === "Escape") setOpen(false);
             }}
           />
-          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-sm border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-sm border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             /
           </kbd>
         </div>

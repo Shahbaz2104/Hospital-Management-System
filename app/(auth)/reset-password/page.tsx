@@ -18,7 +18,6 @@ export default async function ResetPasswordPage({
   if (!token) {
     return (
       <AuthShell
-        eyebrow="Reset access"
         title="Invalid reset link"
         subtitle="This link is missing its token. Please request a new one."
         footer={
@@ -36,7 +35,6 @@ export default async function ResetPasswordPage({
 
   return (
     <AuthShell
-      eyebrow="Reset access"
       title="Choose a new password"
       subtitle="Your password should be at least 8 characters, with an uppercase letter and a number."
       footer={

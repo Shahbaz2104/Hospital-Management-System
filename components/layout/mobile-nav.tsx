@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Menu } from "lucide-react";
+import { HeartPulse, Menu } from "lucide-react";
 
 import { navConfig } from "@/constants/nav";
 import { can } from "@/lib/auth/can";
@@ -38,7 +38,7 @@ export function MobileNav({ user }: { user: SessionUser }) {
       <SheetContent side="left" className="w-72 p-0">
         <SheetHeader className="flex h-16 flex-row items-center gap-2 border-b px-4">
           <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Activity className="size-4" />
+            <HeartPulse className="size-4" />
           </span>
           <SheetTitle className="text-sm font-semibold">
             HealthCare HMS
@@ -53,7 +53,7 @@ export function MobileNav({ user }: { user: SessionUser }) {
             return (
               <div key={section.title ?? i} className="space-y-1">
                 {section.title && (
-                  <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <p className="px-3 pb-1 text-[11px] font-medium text-muted-foreground">
                     {section.title}
                   </p>
                 )}

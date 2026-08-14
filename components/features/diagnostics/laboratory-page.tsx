@@ -333,13 +333,13 @@ export function LaboratoryPage() {
                   <tr key={t.id} className="border-b last:border-0">
                     <td className="px-4 py-3">
                       <p className="font-medium">{t.name}</p>
-                      <p className="font-mono text-xs text-muted-foreground">{t.code}</p>
+                      <p className="tabular-nums text-xs text-muted-foreground">{t.code}</p>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="outline">{CATEGORY_LABELS[t.category] ?? t.category}</Badge>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{t.unit ?? "—"}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{t.normalRange ?? "—"}</td>
+                    <td className="px-4 py-3 tabular-nums text-xs text-muted-foreground">{t.normalRange ?? "—"}</td>
                     <td className="px-4 py-3 text-right tabular-nums">${t.price.toFixed(2)}</td>
                   </tr>
                 ))}
@@ -387,7 +387,7 @@ export function LaboratoryPage() {
                     className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border bg-card p-4"
                   >
                     <div className="w-20 text-center">
-                      <p className="text-sm font-semibold font-mono tabular-nums leading-none">
+                      <p className="text-sm font-semibold tabular-nums leading-none">
                         {o.orderNo}
                       </p>
                       <p className="mt-1 text-[11px] text-muted-foreground">
@@ -810,7 +810,7 @@ function ResultsDialog({
             <div key={t.testId} className="grid grid-cols-3 items-center gap-2">
               <div className="leading-tight">
                 <p className="text-sm font-medium">{t.name}</p>
-                <p className="font-mono text-[11px] text-muted-foreground">
+                <p className="tabular-nums text-[11px] text-muted-foreground">
                   {t.normalRange ?? "—"}
                 </p>
               </div>

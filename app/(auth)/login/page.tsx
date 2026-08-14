@@ -32,7 +32,6 @@ export default async function LoginPage({
 
   return (
     <AuthShell
-      eyebrow="Welcome back"
       title="Sign in to your account"
       subtitle="Manage patients, appointments, billing and more from one place."
       footer={
@@ -45,14 +44,12 @@ export default async function LoginPage({
       <LoginForm from={safeFrom(from)} />
       <Card className="mt-6">
         <CardContent className="p-4 text-xs text-muted-foreground">
-          <p className="mb-2 font-medium uppercase tracking-wider text-foreground">
-            Demo access
-          </p>
+          <p className="mb-2 font-medium text-foreground">Demo access</p>
           <ul className="space-y-1">
             {demoAccounts.map((a) => (
               <li key={a.email} className="flex justify-between gap-4">
                 <span>{a.role}</span>
-                <span className="font-mono">{a.email}</span>
+                <span className="tabular-nums">{a.email}</span>
               </li>
             ))}
           </ul>

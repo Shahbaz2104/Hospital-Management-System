@@ -126,7 +126,7 @@ export function DepartmentsPage() {
       accessorKey: "code",
       header: "Code",
       cell: ({ row }) => (
-        <Badge variant="secondary" className="font-mono">
+        <Badge variant="secondary" className="tabular-nums">
           {row.original.code}
         </Badge>
       ),

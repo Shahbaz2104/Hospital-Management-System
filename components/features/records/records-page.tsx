@@ -51,11 +51,11 @@ type PatientOption = { id: string; patientNo: string; firstName: string; lastNam
 type DoctorOption = { id: string; user: { title: string | null; firstName: string; lastName: string } };
 
 const TYPE_META: Record<string, { label: string; cls: string }> = {
-  PRESCRIPTION: { label: "Prescription", cls: "bg-teal-500/10 text-teal-700 dark:text-teal-300" },
+  PRESCRIPTION: { label: "Prescription", cls: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300" },
   DIAGNOSIS: { label: "Diagnosis", cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
   LAB: { label: "Lab", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   RADIOLOGY: { label: "Radiology", cls: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
-  ADMISSION: { label: "Admission", cls: "bg-teal-600/10 text-teal-700 dark:text-teal-300" },
+  ADMISSION: { label: "Admission", cls: "bg-indigo-600/10 text-indigo-700 dark:text-indigo-300" },
   OPD: { label: "OPD", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
   GENERAL: { label: "General", cls: "bg-muted text-muted-foreground" },
 };

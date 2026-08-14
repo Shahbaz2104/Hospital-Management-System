@@ -284,7 +284,7 @@ export function RadiologyPage() {
                 className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border bg-card p-4"
               >
                 <div className="w-20 text-center">
-                  <p className="font-mono text-sm font-semibold tabular-nums leading-none">
+                  <p className="text-sm font-semibold tabular-nums leading-none">
                     {o.orderNo}
                   </p>
                   <p className="mt-1 text-[11px] text-muted-foreground">

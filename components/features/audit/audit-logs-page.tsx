@@ -77,7 +77,7 @@ export function AuditLogsPage() {
               data?.items.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell>
-                    <Badge variant="outline" className="font-mono text-xs">
+                    <Badge variant="outline" className="text-xs">
                       {log.action}
                     </Badge>
                   </TableCell>
@@ -85,7 +85,7 @@ export function AuditLogsPage() {
                   <TableCell className="text-sm text-muted-foreground">
                     {log.entity ?? "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
+                  <TableCell className="tabular-nums text-xs text-muted-foreground">
                     {log.ipAddress}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">

@@ -138,7 +138,7 @@ export function StaffPage() {
                           </p>
                         )}
                       </div>
-                      <p className="mt-2 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                      <p className="mt-2 tabular-nums text-[10px] uppercase tracking-wide text-muted-foreground">
                         {e.employeeNo}
                       </p>
                     </div>

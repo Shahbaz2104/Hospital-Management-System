@@ -187,7 +187,7 @@ export function OpdQueue() {
                 }`}
               >
                 <div className="w-16 text-center">
-                  <p className="text-2xl font-semibold font-mono tabular-nums leading-none">
+                  <p className="text-2xl font-semibold tabular-nums leading-none">
                     {index + 1}
                   </p>
                   <p className="mt-1 text-[11px] text-muted-foreground">{a.tokenNo}</p>
@@ -202,7 +202,7 @@ export function OpdQueue() {
                   </p>
                 </div>
                 <div className="min-w-40 leading-tight">
-                  <p className="text-sm font-mono tabular-nums">{a.startTime}</p>
+                  <p className="text-sm tabular-nums">{a.startTime}</p>
                   <p className="text-xs text-muted-foreground">
                     {a.doctor
                       ? `${a.doctor.user.title ? a.doctor.user.title + " " : ""}${a.doctor.user.firstName} ${a.doctor.user.lastName}`

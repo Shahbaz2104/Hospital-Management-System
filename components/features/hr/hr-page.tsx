@@ -154,7 +154,7 @@ const BADGES: Record<string, { label: string; cls: string }> = {
   PRESENT: { label: "Present", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   ABSENT: { label: "Absent", cls: "bg-destructive/10 text-destructive" },
   HALF_DAY: { label: "Half day", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  LEAVE: { label: "Leave", cls: "bg-teal-500/10 text-teal-700 dark:text-teal-300" },
+  LEAVE: { label: "Leave", cls: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
   PENDING: { label: "Pending", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
   APPROVED: { label: "Approved", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   REJECTED: { label: "Rejected", cls: "bg-destructive/10 text-destructive" },
@@ -468,7 +468,7 @@ function EmployeesTab({
                       <p className="font-medium">{e.user.firstName} {e.user.lastName}</p>
                       <p className="text-xs text-muted-foreground">{e.user.email}</p>
                     </td>
-                    <td className="font-mono text-xs">{e.employeeNo}</td>
+                    <td className="tabular-nums text-xs">{e.employeeNo}</td>
                     <td>{e.designation ?? "—"}</td>
                     <td>{e.department?.name ?? "—"}</td>
                     <td>{EMPLOYMENT_LABELS[e.employmentType] ?? e.employmentType}</td>
@@ -786,12 +786,12 @@ function AttendanceTab({
                     <tr key={s.employeeId}>
                       <td>
                         <p className="font-medium">{s.name}</p>
-                        <p className="font-mono text-xs text-muted-foreground">{s.employeeNo}{s.department ? ` · ${s.department}` : ""}</p>
+                        <p className="tabular-nums text-xs text-muted-foreground">{s.employeeNo}{s.department ? ` · ${s.department}` : ""}</p>
                       </td>
                       <td className="text-center tabular-nums text-emerald-600 dark:text-emerald-400">{s.PRESENT}</td>
                       <td className="text-center tabular-nums text-destructive">{s.ABSENT}</td>
                       <td className="text-center tabular-nums text-amber-600 dark:text-amber-400">{s.HALF_DAY}</td>
-                      <td className="text-center tabular-nums text-teal-600 dark:text-teal-400">{s.LEAVE}</td>
+                      <td className="text-center tabular-nums text-amber-600 dark:text-amber-400">{s.LEAVE}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -825,13 +825,13 @@ function AttendanceTab({
                     const b = badge(r.status);
                     return (
                       <tr key={r.id}>
-                        <td className="whitespace-nowrap font-mono text-xs">{r.date}</td>
+                        <td className="whitespace-nowrap tabular-nums text-xs">{r.date}</td>
                         <td>
                           <p className="font-medium">{r.employee.user.firstName} {r.employee.user.lastName}</p>
                           <p className="text-xs text-muted-foreground">{r.employee.department?.name ?? "—"}</p>
                         </td>
                         <td><Badge className={b.cls}>{b.label}</Badge></td>
-                        <td className="whitespace-nowrap font-mono text-xs">
+                        <td className="whitespace-nowrap tabular-nums text-xs">
                           {r.checkIn || "—"} → {r.checkOut || "—"}
                         </td>
                         <td className="tabular-nums">{r.hoursWorked != null ? `${r.hoursWorked}h` : "—"}</td>
@@ -965,13 +965,13 @@ function LeavesTab({
                 const b = badge(l.status);
                 return (
                   <tr key={l.id}>
-                    <td className="font-mono text-xs">{l.leaveNo}</td>
+                    <td className="tabular-nums text-xs">{l.leaveNo}</td>
                     <td>
                       <p className="font-medium">{l.employee.user.firstName} {l.employee.user.lastName}</p>
                       <p className="text-xs text-muted-foreground">{l.employee.department?.name ?? "—"}</p>
                     </td>
                     <td>{LEAVE_TYPE_LABELS[l.type] ?? l.type}</td>
-                    <td className="whitespace-nowrap font-mono text-xs">
+                    <td className="whitespace-nowrap tabular-nums text-xs">
                       {format(new Date(l.fromDate), "MMM d")} → {format(new Date(l.toDate), "MMM d, yyyy")}
                     </td>
                     <td className="tabular-nums">{l.days}</td>
@@ -1144,7 +1144,7 @@ function ReviewsTab({
                   <td>
                     <p className="font-medium">{r.employee.user.firstName} {r.employee.user.lastName}</p>
                   </td>
-                  <td className="whitespace-nowrap font-mono text-xs">{r.period}</td>
+                  <td className="whitespace-nowrap tabular-nums text-xs">{r.period}</td>
                   <td>
                     <span className="inline-flex items-center gap-0.5 text-amber-500">
                       {Array.from({ length: 5 }).map((_, i) => (

@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { HeartHandshake, ShieldCheck, Zap } from "lucide-react";
+import { HeartPulse, ShieldCheck, Zap } from "lucide-react";
 
 import { AnimatedText } from "@/components/motion/animated-text";
 import { Reveal } from "@/components/motion/reveal";
@@ -8,17 +8,15 @@ import { Reveal } from "@/components/motion/reveal";
 const perks = [
   { icon: ShieldCheck, text: "Role-based access control for every team" },
   { icon: Zap, text: "Appointments, billing & pharmacy in one place" },
-  { icon: HeartHandshake, text: "Designed for hospitals, clinics & labs" },
+  { icon: HeartPulse, text: "Designed for hospitals, clinics & labs" },
 ];
 
 export function AuthShell({
-  eyebrow,
   title,
   subtitle,
   children,
   footer,
 }: {
-  eyebrow: string;
   title: string;
   subtitle?: string;
   children: React.ReactNode;
@@ -26,31 +24,22 @@ export function AuthShell({
 }) {
   return (
     <div className="flex min-h-svh">
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-[#0B1F24] p-10 text-white lg:flex">
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-[#12141D] p-10 text-white lg:flex">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(700px 480px at 12% 6%, oklch(0.55 0.11 175 / 0.4), transparent 62%), radial-gradient(560px 420px at 92% 92%, oklch(0.45 0.1 175 / 0.22), transparent 60%)",
+              "radial-gradient(700px 480px at 12% 6%, oklch(0.55 0.17 264 / 0.35), transparent 62%), radial-gradient(560px 420px at 92% 92%, oklch(0.45 0.14 264 / 0.18), transparent 60%)",
           }}
         />
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
 
         <div className="relative flex items-center gap-2.5">
           <span className="flex size-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
-            <svg viewBox="0 0 32 32" aria-hidden className="size-5 text-[#7FE0D0]">
-              <path
-                d="M3 16h4l1.2 0 .9-2.8 1.2 5.6.9-4 1.2 1.2h5l1.2 0 .9-3.9 1.2 7.3.9-4.5 1.2 1.2h5l1.2 0 .9-2.8 1.2 5.6.9-4 1.2 1.2h2.4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <HeartPulse className="size-5 text-[#A5B4FC]" />
           </span>
-          <span className="font-heading text-sm font-semibold tracking-tight">
+          <span className="text-sm font-semibold tracking-tight">
             HealthCare HMS
           </span>
         </div>
@@ -64,7 +53,7 @@ export function AuthShell({
             />
           </Reveal>
           <Reveal delay={0.1}>
-            <p className="max-w-md text-sm leading-relaxed text-[#B9CFCB]">
+            <p className="max-w-md text-sm leading-relaxed text-white/60">
               The enterprise hospital management platform for patient records,
               appointments, billing, pharmacy, laboratory and beyond.
             </p>
@@ -72,8 +61,8 @@ export function AuthShell({
           <ul className="max-w-sm space-y-3">
             {perks.map((perk, i) => (
               <Reveal key={perk.text} delay={0.15 + i * 0.05}>
-                <li className="flex items-center gap-3 text-sm text-[#D6E6E2]">
-                  <perk.icon className="size-4 shrink-0 text-[#7FE0D0]" />
+                <li className="flex items-center gap-3 text-sm text-white/75">
+                  <perk.icon className="size-4 shrink-0 text-[#A5B4FC]" />
                   {perk.text}
                 </li>
               </Reveal>
@@ -82,10 +71,7 @@ export function AuthShell({
         </div>
 
         <div className="relative flex items-end justify-between">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#8FB3AD]">
-            Monitoring · Round the clock
-          </p>
-          <p className="text-xs text-[#8FB3AD]">
+          <p className="text-xs text-white/40">
             © {new Date().getFullYear()} HealthCare HMS. Secure by design.
           </p>
         </div>
@@ -95,22 +81,12 @@ export function AuthShell({
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-2 lg:hidden">
             <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <svg viewBox="0 0 32 32" aria-hidden className="size-5">
-                <path
-                  d="M3 16h4l1.2 0 .9-2.8 1.2 5.6.9-4 1.2 1.2h5l1.2 0 .9-3.9 1.2 7.3.9-4.5 1.2 1.2h5l1.2 0 .9-2.8 1.2 5.6.9-4 1.2 1.2h2.4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <HeartPulse className="size-5" />
             </span>
-            <span className="font-heading text-sm font-semibold">HealthCare HMS</span>
+            <span className="text-sm font-semibold">HealthCare HMS</span>
           </div>
 
-          <p className="eyebrow">{eyebrow}</p>
-          <h2 className="mt-1.5 font-heading text-[1.7rem] font-semibold leading-9 tracking-tight">
+          <h2 className="font-heading text-[1.7rem] font-semibold leading-9 tracking-tight">
             {title}
           </h2>
           {subtitle && (

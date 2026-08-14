@@ -126,7 +126,7 @@ type Summary = {
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   PENDING: { label: "Pending", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  PARTIAL: { label: "Partial", cls: "bg-teal-500/10 text-teal-700 dark:text-teal-300" },
+  PARTIAL: { label: "Partial", cls: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
   PAID: { label: "Paid", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   REFUNDED: { label: "Refunded", cls: "bg-slate-500/10 text-slate-500 dark:text-slate-400 dark:text-slate-400" },
   CANCELLED: { label: "Cancelled", cls: "bg-destructive/10 text-destructive" },

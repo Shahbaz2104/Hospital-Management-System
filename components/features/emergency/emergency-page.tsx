@@ -75,10 +75,10 @@ const TRIAGE_META: Record<string, { label: string; cls: string; dot: string }> =
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   WAITING: { label: "Waiting", cls: "bg-muted text-muted-foreground" },
-  IN_PROGRESS: { label: "In progress", cls: "bg-teal-600/10 text-teal-700 dark:text-teal-300" },
+  IN_PROGRESS: { label: "In progress", cls: "bg-blue-600/10 text-blue-700 dark:text-blue-300" },
   STABILIZED: { label: "Stabilized", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   TRANSFERRED: { label: "Transferred", cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
-  ADMITTED: { label: "Admitted", cls: "bg-teal-500/10 text-teal-700 dark:text-teal-300" },
+  ADMITTED: { label: "Admitted", cls: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300" },
   DISCHARGED: { label: "Discharged", cls: "bg-muted text-muted-foreground" },
 };
 

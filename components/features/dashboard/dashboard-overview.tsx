@@ -60,24 +60,24 @@ type DashboardSummary = {
 };
 
 const STATUS_META: Record<string, { label: string; className: string; color: string }> = {
-  PENDING: { label: "Pending", className: "bg-amber-100 text-amber-800", color: "#D98A2B" },
-  CONFIRMED: { label: "Confirmed", className: "bg-teal-100 text-teal-800", color: "#0E7C6B" },
-  COMPLETED: { label: "Completed", className: "bg-emerald-100 text-emerald-800", color: "#2E9E6B" },
+  PENDING: { label: "Pending", className: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300", color: "#D98A2B" },
+  CONFIRMED: { label: "Confirmed", className: "bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300", color: "#4F6BD9" },
+  COMPLETED: { label: "Completed", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300", color: "#2E9E6B" },
   CANCELLED: { label: "Cancelled", className: "bg-muted text-muted-foreground", color: "#8FA3A0" },
-  MISSED: { label: "Missed", className: "bg-red-100 text-red-800", color: "#D9553F" },
+  MISSED: { label: "Missed", className: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300", color: "#D9553F" },
 };
 
 const BED_META: Record<string, { label: string; color: string }> = {
-  OCCUPIED: { label: "Occupied", color: "#0E7C6B" },
+  OCCUPIED: { label: "Occupied", color: "#4F46E5" },
   AVAILABLE: { label: "Available", color: "#2E9E6B" },
   CLEANING: { label: "Cleaning", color: "#D98A2B" },
 };
 
 const tooltipStyle = {
   borderRadius: 10,
-  border: "1px solid hsl(var(--border))",
+  border: "1px solid oklch(0.905 0.006 258)",
   fontSize: 12,
-  boxShadow: "0 8px 24px rgb(0 0 0 / 0.08)",
+  boxShadow: "0 8px 24px oklch(0.35 0.05 260 / 0.12)",
 };
 
 export function DashboardOverview() {
@@ -172,7 +172,7 @@ export function DashboardOverview() {
       <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {isLoading
           ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-lg border bg-card p-4">
+              <div key={i} className="rounded-lg border bg-card p-5">
                 <div className="h-3 w-24 animate-pulse rounded bg-muted" />
                 <div className="mt-2 h-8 w-16 animate-pulse rounded bg-muted" />
                 <div className="mt-2 h-3 w-20 animate-pulse rounded bg-muted" />
@@ -218,7 +218,7 @@ export function DashboardOverview() {
                   >
                     <defs>
                       <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" style={{ stopColor: "var(--chart-1)" }} stopOpacity={0.32} />
+                        <stop offset="0%" style={{ stopColor: "var(--chart-1)" }} stopOpacity={0.3} />
                         <stop offset="100%" style={{ stopColor: "var(--chart-1)" }} stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
@@ -311,7 +311,7 @@ export function DashboardOverview() {
                     <p className="font-heading text-3xl font-semibold tabular-nums tracking-tight">
                       {Math.round(totalBeds > 0 ? (occupied / totalBeds) * 100 : 0)}%
                     </p>
-                    <p className="mt-0.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
                       {occupied} of {totalBeds} occupied
                     </p>
                   </div>
@@ -370,16 +370,11 @@ export function DashboardOverview() {
                       key={a.id}
                       className="group flex items-center gap-4 py-3 pl-2"
                     >
-                      <span
-                        aria-hidden
-                        className="w-[3px] shrink-0 self-stretch rounded-full"
-                        style={{ background: meta.color }}
-                      />
                       <div className="w-14 shrink-0 text-center">
-                        <p className="font-mono text-sm font-medium tabular-nums leading-none">
+                        <p className="text-sm font-semibold tabular-nums leading-none">
                           {a.startTime}
                         </p>
-                        <p className="mt-1.5 inline-block rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
+                        <p className="mt-1 text-[11px] tabular-nums text-muted-foreground">
                           {a.tokenNo}
                         </p>
                       </div>
@@ -425,7 +420,7 @@ export function DashboardOverview() {
             ) : (
               <div className="space-y-5">
                 <div>
-                  <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
                     {statuses.map((s) => {
                       const pct = (s.count / totalStatuses) * 100;
                       return (

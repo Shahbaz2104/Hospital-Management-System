@@ -11,7 +11,6 @@ export const metadata: Metadata = { title: "Create account" };
 export default function RegisterPage() {
   return (
     <AuthShell
-      eyebrow="New here?"
       title="Create your account"
       subtitle="Register as a patient to book appointments and view your records."
       footer={

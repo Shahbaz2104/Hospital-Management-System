@@ -30,7 +30,7 @@ type CalendarAppointment = {
 
 const STATUS_BADGE: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800 hover:bg-amber-100",
-  CONFIRMED: "bg-teal-100 text-teal-800 hover:bg-teal-100",
+  CONFIRMED: "bg-indigo-100 text-indigo-800 hover:bg-indigo-100",
   COMPLETED: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100",
   CANCELLED: "bg-red-100 text-red-800 hover:bg-red-100",
   MISSED: "bg-gray-100 text-gray-700 hover:bg-gray-100",
@@ -175,7 +175,7 @@ export function AppointmentCalendar({
                       STATUS_BADGE[a.status] ?? "bg-muted"
                     )}
                   >
-                    <span className="font-mono tabular-nums">{a.startTime}</span>{" "}
+                    <span className="tabular-nums">{a.startTime}</span>{" "}
                     <span className="font-medium">
                       {a.patient.firstName} {a.patient.lastName}
                     </span>

@@ -21,7 +21,7 @@ export function AppShell({
       <Sidebar user={user} collapsed={collapsed} onToggle={setCollapsed} />
       <div className="flex min-h-svh flex-1 flex-col">
         <Topbar user={user} />
-        <main className="flex-1 px-4 py-6 md:px-6">{children}</main>
+        <main className="flex-1 px-4 py-8 md:px-6 lg:px-8">{children}</main>
       </div>
     </div>
   );

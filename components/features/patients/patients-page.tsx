@@ -164,7 +164,7 @@ export function PatientsPage() {
               <p className="font-medium">
                 {p.firstName} {p.lastName}
               </p>
-              <p className="text-xs font-mono text-muted-foreground">
+              <p className="text-xs tabular-nums text-muted-foreground">
                 {p.patientNo}
                 {age !== null && <span> · {age} yrs</span>}
               </p>
@@ -199,7 +199,7 @@ export function PatientsPage() {
       header: "Blood",
       cell: ({ row }) =>
         row.original.bloodGroup ? (
-          <Badge variant="outline" className="font-mono">
+          <Badge variant="outline" className="tabular-nums">
             {row.original.bloodGroup}
           </Badge>
         ) : (

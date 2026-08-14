@@ -1,6 +1,6 @@
 # Hospital Management System
 
-A production-grade, enterprise-style Hospital Management System (HMS) for hospitals, clinics, and diagnostic centers. Built with modern best practices — clean architecture, role-based access control, and a premium, minimal UI.
+A production-grade, enterprise-style Hospital Management System (HMS) for hospitals, clinics, and diagnostic centers. Built with modern best practices — clean architecture, role-based access control, and a clean, modern enterprise UI.
 
 ## Tech Stack
 
@@ -105,7 +105,7 @@ User, Role, Permission, Patient, Doctor, Department, Appointment, Admission, Dis
 
 ## Design
 
-"The Ward Board" identity — the system reads like a hospital ward board: scrub-teal primary on a clinical-paper canvas (dark mode: night ward with monitor-mint), **Space Grotesk** display face paired with IBM Plex Sans, and IBM Plex Mono for every data readout. Structure follows chart-sheet rules: mono section stamps (FINANCE, CLINICAL…), hairline rules, and token-style identifiers. Responsive across desktop / tablet / mobile, with reduced-motion fallbacks. Live progress and decisions are tracked in [`PROGRESS.md`](./PROGRESS.md).
+A clean, modern enterprise identity (Linear/Vercel-school): neutral slate surfaces with hairline borders and tinted shadows, a single **indigo** accent reserved for primary actions, selection, and status — and sentence-case typography throughout. **Geist** drives the UI (self-hosted variable fonts, no external font requests) with **Geist Mono** reserved for raw data readouts (IDs, timestamps, patient/token numbers via `tabular-nums`). One accent, one gray family, quiet 150–250ms ease-out motion, full light/dark modes with reduced-motion fallbacks. Responsive across desktop / tablet / mobile. Live progress and decisions are tracked in [`PROGRESS.md`](./PROGRESS.md).
 
 ## Motion
 

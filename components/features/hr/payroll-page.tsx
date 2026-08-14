@@ -228,7 +228,7 @@ export function PayrollPage() {
                     </td>
                     <td>
                       <p className="font-medium">{p.employee.user.firstName} {p.employee.user.lastName}</p>
-                      <p className="font-mono text-xs text-muted-foreground">{p.employee.employeeNo}</p>
+                      <p className="tabular-nums text-xs text-muted-foreground">{p.employee.employeeNo}</p>
                     </td>
                     <td>{p.employee.department?.name ?? "—"}</td>
                     <td className="text-right tabular-nums">{money(p.basicSalary)}</td>

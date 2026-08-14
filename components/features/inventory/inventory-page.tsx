@@ -329,7 +329,7 @@ export function InventoryPage() {
                   <tr key={e.id} className="border-b last:border-0">
                     <td className="px-4 py-3">
                       <p className="font-medium">{e.name}</p>
-                      <p className="font-mono text-xs text-muted-foreground">{e.code}</p>
+                      <p className="tabular-nums text-xs text-muted-foreground">{e.code}</p>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="outline">{CATEGORY_LABELS[e.category] ?? e.category}</Badge>
@@ -447,7 +447,7 @@ export function InventoryPage() {
               <tbody>
                 {transactions?.items.map((t) => (
                   <tr key={t.id} className="border-b last:border-0">
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                    <td className="px-4 py-3 tabular-nums text-xs text-muted-foreground">
                       {t.txNo}
                       {t.ref ? <p className="text-[11px]">{t.ref}</p> : null}
                     </td>

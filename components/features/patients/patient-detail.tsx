@@ -318,7 +318,7 @@ export function PatientDetail() {
               <span className="text-xl font-semibold tracking-tight sm:text-2xl">
                 {patient.firstName} {patient.lastName}
               </span>
-              <p className="text-sm font-mono text-muted-foreground">
+              <p className="text-sm tabular-nums text-muted-foreground">
                 {patient.patientNo}
                 {patient.dob ? ` · ${ageOf(patient.dob)} yrs` : ""}
               </p>
@@ -367,7 +367,7 @@ export function PatientDetail() {
                   return (
                     <div key={c.id} className="py-3">
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <p className="font-mono text-xs font-semibold text-primary">
+                        <p className="tabular-nums text-xs font-semibold text-primary">
                           {c.consultationNo}
                         </p>
                         <p className="text-sm font-medium">{c.diagnosis ?? "Consultation"}</p>
@@ -381,7 +381,7 @@ export function PatientDetail() {
                       {vitals.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-2">
                           {vitals.map((v) => (
-                            <Badge key={v.name} variant="outline" className="font-mono text-[11px]">
+                            <Badge key={v.name} variant="outline" className="tabular-nums text-[11px]">
                               {v.name} {v.value}
                               {v.unit ? ` ${v.unit}` : ""}
                             </Badge>

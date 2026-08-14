@@ -33,7 +33,7 @@ export default function DashboardError({
               : "An unexpected error occurred while loading this page. Try again, or head back to the dashboard."}
           </p>
           {error.digest ? (
-            <p className="font-mono text-xs text-muted-foreground/60">
+            <p className="text-xs text-muted-foreground/60">
               Error digest: {error.digest}
             </p>
           ) : null}

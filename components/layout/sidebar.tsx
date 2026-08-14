@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsLeft } from "lucide-react";
+import { ChevronsLeft, HeartPulse } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navConfig } from "@/constants/nav";
 import { can } from "@/lib/auth/can";
@@ -11,25 +11,16 @@ import type { SessionUser } from "@/lib/auth/session";
 
 import { Button } from "@/components/ui/button";
 
-/** Brand mark: scrub-teal ward chip with the ECG trace. */
+/** Brand mark: clean indigo chip with a simple heartbeat glyph. */
 function BrandMark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary text-primary-foreground shadow-[0_2px_10px_-2px_oklch(0.35_0.1_176/0.5)]",
+        "relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary text-primary-foreground shadow-sm",
         className
       )}
     >
-      <svg viewBox="0 0 32 32" aria-hidden className="size-6">
-        <path
-          d="M3 16h4l1.2 0 .9-2.8 1.2 5.6.9-4 1.2 1.2h5l1.2 0 .9-3.9 1.2 7.3.9-4.5 1.2 1.2h5l1.2 0 .9-2.8 1.2 5.6.9-4 1.2 1.2h2.4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <HeartPulse className="size-5" strokeWidth={2} />
     </span>
   );
 }
@@ -62,26 +53,26 @@ export function Sidebar({
         <BrandMark />
         {!collapsed && (
           <div className="leading-tight">
-            <p className="font-heading text-[15px] font-semibold tracking-tight">
+            <p className="text-[15px] font-semibold tracking-tight">
               HealthCare HMS
             </p>
-            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              Ward operations
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Hospital management
             </p>
           </div>
         )}
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4" data-lenis-prevent>
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4" data-lenis-prevent>
         {navConfig.map((section, i) => {
           const items = section.items.filter(
             (item) => !item.permission || can(user, item.permission as never)
           );
           if (!items.length) return null;
           return (
-            <div key={section.title ?? i} className="space-y-1">
+            <div key={section.title ?? i} className="space-y-0.5">
               {section.title && !collapsed && (
-                <p className="px-3 pb-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/80">
+                <p className="px-3 pb-1 text-[11px] font-medium text-muted-foreground">
                   {section.title}
                 </p>
               )}
@@ -98,7 +89,7 @@ export function Sidebar({
                       "group relative flex items-center gap-3 rounded-md px-3 py-2 text-[13.5px] font-medium transition-colors",
                       collapsed && "justify-center px-0",
                       active
-                        ? "bg-primary/[0.08] font-semibold text-primary dark:bg-primary/15"
+                        ? "bg-accent font-semibold text-accent-foreground"
                         : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground"
                     )}
                   >
@@ -111,13 +102,14 @@ export function Sidebar({
                           "size-4 shrink-0",
                           active && "text-primary"
                         )}
+                        strokeWidth={2}
                       />
                     )}
                     {!collapsed && (
                       <>
                         <span className="flex-1 truncate">{item.title}</span>
                         {item.badge && (
-                          <span className="rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] font-medium text-primary-foreground">
+                          <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
                             {item.badge}
                           </span>
                         )}
@@ -141,7 +133,7 @@ export function Sidebar({
         >
           <ChevronsLeft
             className={cn(
-              "size-4 transition-transform",
+              "size-4 transition-transform duration-200",
               collapsed && "rotate-180"
             )}
           />
