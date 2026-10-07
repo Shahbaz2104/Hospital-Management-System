@@ -75,6 +75,7 @@ model User {
   emergencyEvents    EmergencyEvent[] @relation("EmergencyEventCreatedBy")
 
   @@index([roleId])
+  @@index([hospitalId])
 }
 
 // ============================================================================
@@ -264,7 +265,7 @@ model Department {
   description  String?
   headDoctorId String?  @db.ObjectId
   headDoctor   Doctor?  @relation("DepartmentHead", fields: [headDoctorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  hospitalId   String?
+  hospitalId   String?  @db.ObjectId
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -273,6 +274,8 @@ model Department {
   employees    Employee[]
   rooms        Room[]
   appointments Appointment[]
+
+  @@index([hospitalId])
 }
 
 model Doctor {
@@ -282,6 +285,7 @@ model Doctor {
   departmentId    String?      @db.ObjectId
   department      Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   headOf          Department[] @relation("DepartmentHead")
+  hospitalId      String?      @db.ObjectId
   specialization  String?
   qualification   String?
   experienceYears Int          @default(0)
@@ -301,6 +305,9 @@ model Doctor {
   emergencyCases  EmergencyCase[]
   medicalRecords  MedicalRecord[]
   prescriptions   Prescription[]
+
+  @@index([departmentId])
+  @@index([hospitalId])
 }
 
 model Nurse {
@@ -309,12 +316,15 @@ model Nurse {
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   departmentId String?     @db.ObjectId
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  hospitalId   String?     @db.ObjectId
   ward         String?
   shift        String      @default("DAY") // DAY | NIGHT | ROTATING
   licenseNo    String?
   designation  String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+
+  @@index([hospitalId])
 }
 
 model Employee {
@@ -447,12 +457,14 @@ model Room {
   status       String      @default("AVAILABLE")
   departmentId String?     @db.ObjectId
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  hospitalId   String?     @db.ObjectId
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
   beds Bed[]
 
   @@index([status])
+  @@index([hospitalId])
 }
 
 model Bed {
@@ -462,13 +474,15 @@ model Bed {
   room               Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   status             String   @default("AVAILABLE") // AVAILABLE | OCCUPIED | RESERVED | CLEANING
   patientId          String?  @db.ObjectId
-  currentAdmissionId String?
+  currentAdmissionId String?  @db.ObjectId
+  hospitalId         String?  @db.ObjectId
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   admissions Admission[]
 
   @@index([status])
+  @@index([hospitalId])
 }
 
 model Admission {
@@ -507,6 +521,8 @@ model RefreshToken {
   replacedByToken String?
   userAgent       String?
   ipAddress       String?
+
+  @@index([userId])
 }
 
 // ============================================================================
@@ -538,6 +554,7 @@ model Medicine {
 
   @@index([category])
   @@index([stock])
+  @@index([hospitalId])
 }
 
 model Supplier {

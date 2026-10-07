@@ -14,18 +14,21 @@ async function nextPatientNo(): Promise<string> {
   return nextSeq(() => db.patient.findMany({ select: { patientNo: true } }), "patientNo", "PT");
 }
 
-export async function listPatients(search = "") {
+export async function listPatients(actor: Actor, search = "") {
+  const where: Record<string, unknown> = search
+    ? {
+        OR: [
+          { firstName: { contains: search, mode: "insensitive" } },
+          { lastName: { contains: search, mode: "insensitive" } },
+          { patientNo: { contains: search, mode: "insensitive" } },
+          { phone: { contains: search, mode: "insensitive" } },
+        ],
+      }
+    : {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
+
   return db.patient.findMany({
-    where: search
-      ? {
-          OR: [
-            { firstName: { contains: search, mode: "insensitive" } },
-            { lastName: { contains: search, mode: "insensitive" } },
-            { patientNo: { contains: search, mode: "insensitive" } },
-            { phone: { contains: search, mode: "insensitive" } },
-          ],
-        }
-      : {},
+    where,
     include: { _count: { select: { appointments: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -125,6 +128,7 @@ async function nextToken() {
 }
 
 export async function listAppointments(
+  actor: Actor,
   search = "",
   filters: { doctorId?: string; departmentId?: string; status?: string; date?: string } = {}
 ) {
@@ -140,6 +144,7 @@ export async function listAppointments(
   if (filters.departmentId) where.departmentId = filters.departmentId;
   if (filters.status) where.status = filters.status;
   if (filters.date) where.date = new Date(`${filters.date}T00:00:00`);
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
 
   return db.appointment.findMany({
     where,

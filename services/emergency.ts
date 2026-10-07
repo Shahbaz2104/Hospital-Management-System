@@ -21,8 +21,9 @@ const listInclude = {
   events: { orderBy: { createdAt: "desc" as const }, take: 5, include: { createdBy: { select: { firstName: true, lastName: true } } } },
 };
 
-export async function listEmergencyCases(opts: { status?: string; triageLevel?: string; search?: string }) {
+export async function listEmergencyCases(opts: { actor?: { hospitalId?: string | null }; status?: string; triageLevel?: string; search?: string }) {
   const where: Record<string, unknown> = {};
+  if (opts.actor?.hospitalId) where.hospitalId = opts.actor.hospitalId;
   if (opts.status) where.status = opts.status;
   if (opts.triageLevel) where.triageLevel = opts.triageLevel;
   if (opts.search) {
@@ -69,7 +70,7 @@ export async function listEmergencyCases(opts: { status?: string; triageLevel?: 
 }
 
 export async function createEmergencyCase(
-  actor: { id: string },
+  actor: { id: string; hospitalId?: string | null },
   input: EmergencyCaseCreateInput
 ) {
   const caseNo = await nextCaseNo();
@@ -86,6 +87,7 @@ export async function createEmergencyCase(
       vitals: input.vitals ? JSON.stringify(input.vitals) : null,
       ambulanceRequested: input.ambulanceRequested,
       ambulanceNotes: input.ambulanceNotes || null,
+      hospitalId: actor.hospitalId ?? null,
       createdById: actor.id,
     },
   });
@@ -120,7 +122,7 @@ export async function createEmergencyCase(
 }
 
 export async function updateEmergencyCase(
-  actor: { id: string },
+  actor: { id: string; hospitalId?: string | null },
   id: string,
   input: EmergencyUpdateInput
 ) {
@@ -155,7 +157,7 @@ export async function updateEmergencyCase(
 }
 
 export async function dispatchAmbulance(
-  actor: { id: string },
+  actor: { id: string; hospitalId?: string | null },
   id: string,
   input: AmbulanceDispatchInput
 ) {
@@ -184,7 +186,7 @@ export async function dispatchAmbulance(
   return updated;
 }
 
-export async function addEvent(actor: { id: string }, id: string, input: EmergencyEventInput) {
+export async function addEvent(actor: { id: string; hospitalId?: string | null }, id: string, input: EmergencyEventInput) {
   const existing = await db.emergencyCase.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Emergency case not found");
   const event = await db.emergencyEvent.create({
@@ -195,9 +197,11 @@ export async function addEvent(actor: { id: string }, id: string, input: Emergen
   return event;
 }
 
-export async function listEvents(id: string) {
+export async function listEvents(id: string, opts?: { hospitalId?: string | null }) {
+  const where: Record<string, unknown> = { caseId: id };
+  if (opts?.hospitalId) where.hospitalId = opts.hospitalId;
   return db.emergencyEvent.findMany({
-    where: { caseId: id },
+    where,
     orderBy: { createdAt: "desc" },
     include: { createdBy: { select: { firstName: true, lastName: true } } },
   });

@@ -14,6 +14,7 @@ export const GET = route(async (req) => {
 
   return ok(
     await listRecords({
+      actor,
       patientId: scopedPatientId ?? url.searchParams.get("patientId") ?? undefined,
       type: url.searchParams.get("type") ?? undefined,
       search: url.searchParams.get("q") ?? undefined,

@@ -80,8 +80,9 @@ const invoiceInclude = {
   issuedBy: { select: { id: true, firstName: true, lastName: true } },
 };
 
-export async function listInvoices(filters: { status?: string; search?: string; page?: number; pageSize?: number } = {}) {
+export async function listInvoices(actor: Actor, filters: { status?: string; search?: string; page?: number; pageSize?: number } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   if (filters.search) {
     where.OR = [
@@ -208,8 +209,9 @@ export async function cancelInvoice(_actor: Actor, id: string) {
 // Payments & refunds
 // ---------------------------------------------------------------------------
 
-export async function listPayments(filters: { method?: string; status?: string; search?: string } = {}) {
+export async function listPayments(actor: Actor, filters: { method?: string; status?: string; search?: string } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.method && filters.method !== "ALL") where.method = filters.method;
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   if (filters.search) {
@@ -407,8 +409,9 @@ export async function updateInsuranceCompany(actor: Actor, id: string, input: Pa
   return company;
 }
 
-export async function listPolicies(filters: { patientId?: string; status?: string } = {}) {
+export async function listPolicies(actor: Actor, filters: { patientId?: string; status?: string } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.patientId) where.patientId = filters.patientId;
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   return db.insurancePolicy.findMany({
@@ -449,8 +452,9 @@ export async function createInsurancePolicy(actor: Actor, input: z.infer<typeof 
   return policy;
 }
 
-export async function listClaims(filters: { status?: string } = {}) {
+export async function listClaims(actor: Actor, filters: { status?: string } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   return db.insuranceClaim.findMany({
     where,

@@ -27,8 +27,9 @@ async function nextEquipmentCode(): Promise<string> {
   return nextSeq(() => db.medicalEquipment.findMany({ select: { code: true } }), "code", "EQ");
 }
 
-export async function listEquipment(filters: { status?: string; category?: string } = {}) {
+export async function listEquipment(actor: Actor, filters: { status?: string; category?: string } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   if (filters.category && filters.category !== "ALL") where.category = filters.category;
 

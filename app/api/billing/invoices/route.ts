@@ -5,14 +5,17 @@ import { createInvoice, listInvoices } from "@/services/billing";
 import { createInvoiceSchema } from "@/validators/billing";
 
 export const GET = route(async (req) => {
-  await requirePermission("billing:read");
+  const actor = await requirePermission("billing:read");
   const params = new URL(req.url).searchParams;
-  const result = await listInvoices({
-    status: params.get("status") ?? "ALL",
-    search: params.get("search") ?? undefined,
-    page: Number(params.get("page") ?? 1),
-    pageSize: Number(params.get("pageSize") ?? 20),
-  });
+  const result = await listInvoices(
+    { userId: actor.id, hospitalId: actor.hospitalId },
+    {
+      status: params.get("status") ?? "ALL",
+      search: params.get("search") ?? undefined,
+      page: Number(params.get("page") ?? 1),
+      pageSize: Number(params.get("pageSize") ?? 20),
+    }
+  );
   return ok(result);
 });
 

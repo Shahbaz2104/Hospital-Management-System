@@ -8,13 +8,13 @@ import {
 import { radiologyOrderSchema } from "@/validators/diagnostics";
 
 export const GET = route(async (req: Request) => {
-  await requirePermission("radiology:read");
+  const actor = await requirePermission("radiology:read");
 
   const url = new URL(req.url);
   const status = url.searchParams.get("status") ?? undefined;
   const patientId = url.searchParams.get("patientId") ?? undefined;
 
-  const orders = await listRadiologyOrders({ status, patientId });
+  const orders = await listRadiologyOrders({ userId: actor.id, hospitalId: actor.hospitalId }, { status, patientId });
   return ok({ items: orders });
 });
 

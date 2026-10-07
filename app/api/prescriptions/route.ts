@@ -4,10 +4,11 @@ import { createPrescription, listPrescriptions, notifyPharmacyOfPrescription } f
 import { prescriptionCreateSchema } from "@/validators/prescriptions";
 
 export const GET = route(async (req) => {
-  await requirePermission("prescriptions:read");
+  const actor = await requirePermission("prescriptions:read");
   const url = new URL(req.url);
   return ok(
     await listPrescriptions({
+      actor,
       patientId: url.searchParams.get("patientId") ?? undefined,
       status: url.searchParams.get("status") ?? undefined,
       search: url.searchParams.get("q") ?? undefined,

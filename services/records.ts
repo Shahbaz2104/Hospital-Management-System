@@ -7,8 +7,9 @@ async function nextRecordNo(): Promise<string> {
   return nextSeq(() => db.medicalRecord.findMany({ select: { recordNo: true } }), "recordNo", "MR");
 }
 
-export async function listRecords(opts: { patientId?: string; type?: string; search?: string }) {
+export async function listRecords(opts: { actor?: { hospitalId?: string | null }; patientId?: string; type?: string; search?: string }) {
   const where: Record<string, unknown> = {};
+  if (opts.actor?.hospitalId) where.hospitalId = opts.actor.hospitalId;
   if (opts.patientId) where.patientId = opts.patientId;
   if (opts.type) where.type = opts.type;
   if (opts.search) {
@@ -35,7 +36,7 @@ export async function listRecords(opts: { patientId?: string; type?: string; sea
   return { items, total };
 }
 
-export async function createRecord(actor: { id: string }, input: MedicalRecordCreateInput) {
+export async function createRecord(actor: { id: string; hospitalId?: string | null }, input: MedicalRecordCreateInput) {
   const recordNo = await nextRecordNo();
   const record = await db.medicalRecord.create({
     data: {
@@ -48,6 +49,7 @@ export async function createRecord(actor: { id: string }, input: MedicalRecordCr
       entityType: input.entityType || null,
       entityId: input.entityId || null,
       files: input.files && input.files.length > 0 ? JSON.stringify(input.files) : null,
+      hospitalId: actor.hospitalId ?? null,
     },
     include: {
       patient: { select: { id: true, patientNo: true, firstName: true, lastName: true } },

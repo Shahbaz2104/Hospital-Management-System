@@ -1,12 +1,9 @@
-import { createHash } from "crypto";
 import { z } from "zod";
-
-import { secretSeed } from "@/lib/auth/secrets";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL (or MONGODB_URI) is required"),
-  JWT_ACCESS_SECRET: z.string().min(16).optional(),
-  JWT_REFRESH_SECRET: z.string().min(16).optional(),
+  JWT_ACCESS_SECRET: z.string().min(16, "JWT_ACCESS_SECRET must be ≥16 characters"),
+  JWT_REFRESH_SECRET: z.string().min(16, "JWT_REFRESH_SECRET must be ≥16 characters"),
   JWT_ACCESS_EXPIRES_IN: z.coerce.number().default(900),
   JWT_REFRESH_EXPIRES_IN: z.coerce.number().default(604800),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
@@ -52,23 +49,6 @@ if (rawUrl) {
 const isBuildPhase =
   process.env.NEXT_PHASE === "phase-production-build" ||
   process.env.NEXT_PHASE === "phase-development-build";
-
-// Derive stable JWT secrets from the DB connection string when they are not
-// provided. Deterministic, so issued sessions remain valid across serverless
-// cold starts and redeploys. Explicit secrets always take precedence.
-function derivedSecret(salt: string): string {
-  return createHash("sha256")
-    .update(secretSeed(salt))
-    .digest("base64")
-    .replace(/[^a-zA-Z0-9]/g, "");
-}
-
-if (!process.env.JWT_ACCESS_SECRET || process.env.JWT_ACCESS_SECRET.length < 16) {
-  process.env.JWT_ACCESS_SECRET = derivedSecret("access");
-}
-if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET.length < 16) {
-  process.env.JWT_REFRESH_SECRET = derivedSecret("refresh");
-}
 
 const parsed = envSchema.safeParse(process.env);
 

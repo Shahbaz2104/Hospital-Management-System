@@ -5,12 +5,15 @@ import { createEquipment, listEquipment } from "@/services/inventory";
 import { equipmentSchema } from "@/validators/pharmacy";
 
 export const GET = route(async (req) => {
-  await requirePermission("inventory:read");
+  const actor = await requirePermission("inventory:read");
   const params = new URL(req.url).searchParams;
-  const items = await listEquipment({
-    status: params.get("status") ?? "ALL",
-    category: params.get("category") ?? "ALL",
-  });
+  const items = await listEquipment(
+    { userId: actor.id, hospitalId: actor.hospitalId },
+    {
+      status: params.get("status") ?? "ALL",
+      category: params.get("category") ?? "ALL",
+    }
+  );
   return ok({ items });
 });
 

@@ -187,7 +187,9 @@ export function RadiologyPage() {
     const reports = parseJsonArray<{ name: string; url: string; uploadedAt: string }>(o.reports, []);
     const w = window.open("", "_blank", "width=480,height=700");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>Radiology Report — ${o.orderNo}</title>
+    const e = (s: unknown) => s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    const eUrl = (s: unknown) => { const str = String(s ?? "").trim(); return /^javascript:/i.test(str) || /^data:/i.test(str) ? "#" : e(str); };
+    w.document.write(`<!doctype html><html><head><title>Radiology Report — ${e(o.orderNo)}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:ui-sans-serif,system-ui,sans-serif;background:#f1f5f9;padding:24px;color:#0f172a}
@@ -205,19 +207,19 @@ export function RadiologyPage() {
         .link{display:block;font-size:12px;color:#0E7C6B;margin-top:4px}
         .foot{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 20px;font-size:10px;color:#94a3b8}
       </style></head><body><div class="sheet">
-        <div class="head"><div><h1>City Care Hospital</h1><p>Radiology Report</p></div><div style="text-align:right"><b style="font-size:13px">${o.orderNo}</b><p>${MODALITY_LABELS[o.modality] ?? o.modality}</p></div></div>
+        <div class="head"><div><h1>City Care Hospital</h1><p>Radiology Report</p></div><div style="text-align:right"><b style="font-size:13px">${e(o.orderNo)}</b><p>${e(MODALITY_LABELS[o.modality] ?? o.modality)}</p></div></div>
         <div class="body">
-          <div class="name">${o.patient.firstName} ${o.patient.lastName}</div>
-          <div class="mono">${o.patient.patientNo}</div>
+          <div class="name">${e(o.patient.firstName)} ${e(o.patient.lastName)}</div>
+          <div class="mono">${e(o.patient.patientNo)}</div>
           <div class="meta">
-            <div><b>Study</b>${MODALITY_LABELS[o.modality] ?? o.modality}</div>
-            <div><b>Body part</b>${o.bodyPart ?? "—"}</div>
+            <div><b>Study</b>${e(MODALITY_LABELS[o.modality] ?? o.modality)}</div>
+            <div><b>Body part</b>${e(o.bodyPart ?? "—")}</div>
             ${o.scheduledAt ? `<div><b>Performed</b>${format(new Date(o.scheduledAt), "MMM d, yyyy")}</div>` : ""}
             <div><b>Reported</b>${o.findings ? format(new Date(), "MMM d, yyyy") : "—"}</div>
           </div>
           <p class="section">Findings</p>
-          <div class="findings">${o.findings ?? "Pending radiologist interpretation."}</div>
-          ${reports.length > 0 ? `<p class="section">Attachments</p>${reports.map((r) => `<a class="link" href="${r.url}" target="_blank">${r.name}</a>`).join("")}` : ""}
+          <div class="findings">${e(o.findings ?? "Pending radiologist interpretation.")}</div>
+          ${reports.length > 0 ? `<p class="section">Attachments</p>${reports.map((r) => `<a class="link" href="${eUrl(r.url)}" target="_blank">${e(r.name)}</a>`).join("")}` : ""}
         </div>
         <div class="foot">Generated ${format(new Date(), "MMM d, yyyy HH:mm")} · City Care Hospital Radiology</div>
       </div><script>window.onload=function(){window.print()}</script></body></html>`);

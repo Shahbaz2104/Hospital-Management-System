@@ -233,6 +233,7 @@ export function PatientDetail() {
 
   async function onPrintCard() {
     if (!patient) return;
+    const { escapeHtml } = await import("@/lib/html-escape");
     let qr: string | null = null;
     try {
       const QRCode = (await import("qrcode")).default;
@@ -248,7 +249,7 @@ export function PatientDetail() {
     }
     const w = window.open("", "_blank", "width=420,height=640");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>Patient ID — ${patient.patientNo}</title>
+    w.document.write(`<!doctype html><html><head><title>Patient ID — ${escapeHtml(patient.patientNo)}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:ui-sans-serif,system-ui,sans-serif;background:#f1f5f9;padding:24px;color:#0f172a}
@@ -266,17 +267,17 @@ export function PatientDetail() {
         .meta b{font-weight:600;color:#0f172a;display:block}
         .foot{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 20px;font-size:10px;color:#94a3b8}
       </style></head><body><div class="card">
-        <div class="head"><div><h1>City Care Hospital</h1><p>Patient Identification Card</p></div><div style="text-align:right"><b style="font-size:13px">${patient.bloodGroup ?? "—"}</b><p>Blood group</p></div></div>
+        <div class="head"><div><h1>City Care Hospital</h1><p>Patient Identification Card</p></div><div style="text-align:right"><b style="font-size:13px">${escapeHtml(patient.bloodGroup ?? "—")}</b><p>Blood group</p></div></div>
         <div class="body">
           <div class="info">
-            <div class="name">${patient.firstName} ${patient.lastName}</div>
-            <div class="mono">${patient.patientNo}</div>
+            <div class="name">${escapeHtml(patient.firstName)} ${escapeHtml(patient.lastName)}</div>
+            <div class="mono">${escapeHtml(patient.patientNo)}</div>
             <div class="meta">
-              <div><span>Gender</span><b>${patient.gender ? patient.gender.toLowerCase() : "—"}</b></div>
+              <div><span>Gender</span><b>${escapeHtml(patient.gender ? patient.gender.toLowerCase() : "—")}</b></div>
               <div><span>Age</span><b>${patient.dob ? ageOf(patient.dob) + " yrs" : "—"}</b></div>
-              ${patient.phone ? `<div><span>Phone</span><b>${patient.phone}</b></div>` : ""}
-              ${patient.emergencyContact ? `<div><span>Emergency</span><b>${patient.emergencyContact}</b></div>` : ""}
-              ${patient.allergies ? `<div style="grid-column:1/-1"><span>Allergies</span><b style="color:#dc2626">${patient.allergies}</b></div>` : ""}
+              ${patient.phone ? `<div><span>Phone</span><b>${escapeHtml(patient.phone)}</b></div>` : ""}
+              ${patient.emergencyContact ? `<div><span>Emergency</span><b>${escapeHtml(patient.emergencyContact)}</b></div>` : ""}
+              ${patient.allergies ? `<div style="grid-column:1/-1"><span>Allergies</span><b style="color:#dc2626">${escapeHtml(patient.allergies)}</b></div>` : ""}
             </div>
           </div>
           ${qr ? `<img class="qr" src="${qr}" alt="QR"/>` : ""}

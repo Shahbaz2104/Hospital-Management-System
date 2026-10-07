@@ -5,9 +5,9 @@ import { createMedicine, listMedicines } from "@/services/pharmacy";
 import { medicineSchema } from "@/validators/pharmacy";
 
 export const GET = route(async (req) => {
-  await requirePermission("pharmacy:read");
+  const actor = await requirePermission("pharmacy:read");
   const params = new URL(req.url).searchParams;
-  const items = await listMedicines({
+  const items = await listMedicines({ userId: actor.id, hospitalId: actor.hospitalId }, {
     category: params.get("category") ?? "ALL",
     search: params.get("search") ?? undefined,
   });

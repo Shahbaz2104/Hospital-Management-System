@@ -87,8 +87,9 @@ export function OpdQueue() {
     }
     const w = window.open("", "_blank", "width=420,height=640");
     if (!w) return;
+    const e = (s: unknown) => s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
     const doc = w.document;
-    doc.write(`<!doctype html><html><head><title>OPD Slip — ${a.tokenNo}</title>
+    doc.write(`<!doctype html><html><head><title>OPD Slip — ${e(a.tokenNo)}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:ui-sans-serif,system-ui,sans-serif;background:#f1f5f9;padding:24px;color:#0f172a}
@@ -107,17 +108,17 @@ export function OpdQueue() {
         .qr{display:block;margin:14px auto 0;width:110px;height:110px;border:1px solid #e2e8f0;border-radius:10px;padding:6px}
         .foot{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 20px;font-size:10px;color:#94a3b8}
       </style></head><body><div class="slip">
-        <div class="head"><div><h1>City Care Hospital</h1><p>OPD Consultation Slip</p></div><div class="token">${a.tokenNo}</div></div>
+        <div class="head"><div><h1>City Care Hospital</h1><p>OPD Consultation Slip</p></div><div class="token">${e(a.tokenNo)}</div></div>
         <div class="body">
-          <div class="name">${a.patient.firstName} ${a.patient.lastName}</div>
-          <div class="mono">${a.patient.patientNo}</div>
+          <div class="name">${e(a.patient.firstName)} ${e(a.patient.lastName)}</div>
+          <div class="mono">${e(a.patient.patientNo)}</div>
           <div style="margin-top:12px">
             <div class="line"><span>Date</span><b>${format(new Date(a.date), "MMM d, yyyy")}</b></div>
-            <div class="line"><span>Time</span><b>${a.startTime}${a.endTime ? ` – ${a.endTime}` : ""}</b></div>
-            <div class="line"><span>Doctor</span><b>${a.doctor ? `${a.doctor.user.title ? a.doctor.user.title + " " : ""}${a.doctor.user.firstName} ${a.doctor.user.lastName}` : "Unassigned"}</b></div>
-            <div class="line"><span>Department</span><b>${a.department?.name ?? "—"}</b></div>
-            <div class="line"><span>Type</span><b>${TYPE_LABELS[a.type] ?? a.type}</b></div>
-            ${a.reason ? `<div class="line"><span>Reason</span><b>${a.reason}</b></div>` : ""}
+            <div class="line"><span>Time</span><b>${e(a.startTime)}${a.endTime ? ` – ${e(a.endTime)}` : ""}</b></div>
+            <div class="line"><span>Doctor</span><b>${a.doctor ? `${e(a.doctor.user.title ? a.doctor.user.title + " " : "")}${e(a.doctor.user.firstName)} ${e(a.doctor.user.lastName)}` : "Unassigned"}</b></div>
+            <div class="line"><span>Department</span><b>${e(a.department?.name ?? "—")}</b></div>
+            <div class="line"><span>Type</span><b>${e(TYPE_LABELS[a.type] ?? a.type)}</b></div>
+            ${a.reason ? `<div class="line"><span>Reason</span><b>${e(a.reason)}</b></div>` : ""}
           </div>
           ${qr ? `<img class="qr" src="${qr}" alt="QR"/>` : ""}
         </div>

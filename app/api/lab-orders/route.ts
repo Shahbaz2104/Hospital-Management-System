@@ -5,13 +5,13 @@ import { createLabOrder, listLabOrders } from "@/services/diagnostics";
 import { labOrderSchema } from "@/validators/diagnostics";
 
 export const GET = route(async (req: Request) => {
-  await requirePermission("laboratory:read");
+  const actor = await requirePermission("laboratory:read");
 
   const url = new URL(req.url);
   const status = url.searchParams.get("status") ?? undefined;
   const patientId = url.searchParams.get("patientId") ?? undefined;
 
-  const orders = await listLabOrders({ status, patientId });
+  const orders = await listLabOrders({ userId: actor.id, hospitalId: actor.hospitalId }, { status, patientId });
   return ok({ items: orders });
 });
 

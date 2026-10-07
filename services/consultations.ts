@@ -66,8 +66,9 @@ export async function createConsultation(
   return consultation;
 }
 
-export async function listConsultations(filters: { patientId?: string } = {}) {
+export async function listConsultations(actor: Actor, filters: { patientId?: string } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.patientId) where.patientId = filters.patientId;
 
   return db.consultation.findMany({

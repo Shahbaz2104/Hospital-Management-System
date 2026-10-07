@@ -24,8 +24,9 @@ const detailInclude = {
   consultation: { select: { consultationNo: true, diagnosis: true } },
 };
 
-export async function listPrescriptions(opts: { patientId?: string; status?: string; search?: string }) {
+export async function listPrescriptions(opts: { actor?: { hospitalId?: string | null }; patientId?: string; status?: string; search?: string }) {
   const where: Record<string, unknown> = {};
+  if (opts.actor?.hospitalId) where.hospitalId = opts.actor.hospitalId;
   if (opts.patientId) where.patientId = opts.patientId;
   if (opts.status) where.status = opts.status;
   if (opts.search) {
@@ -49,7 +50,7 @@ export async function listPrescriptions(opts: { patientId?: string; status?: str
   return { items, total };
 }
 
-export async function createPrescription(actor: { id: string }, input: PrescriptionCreateInput) {
+export async function createPrescription(actor: { id: string; hospitalId?: string | null }, input: PrescriptionCreateInput) {
   const prescriptionNo = await nextPrescriptionNo();
   const items = input.items.map((item) => ({
     medicine: item.medicine,
@@ -69,6 +70,7 @@ export async function createPrescription(actor: { id: string }, input: Prescript
       diagnosis: input.diagnosis || null,
       notes: input.notes || null,
       items: JSON.stringify(items),
+      hospitalId: actor.hospitalId ?? null,
     },
     include: detailInclude,
   });
@@ -77,7 +79,7 @@ export async function createPrescription(actor: { id: string }, input: Prescript
 }
 
 export async function updatePrescriptionStatus(
-  actor: { id: string },
+  actor: { id: string; hospitalId?: string | null },
   id: string,
   status: "ACTIVE" | "COMPLETED" | "CANCELLED"
 ) {

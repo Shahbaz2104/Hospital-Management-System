@@ -1,8 +1,8 @@
 # ROADMAP.md — Three-Axis Improvement Plan
 
-> **Status:** proposed · not started
+> **Status:** in progress — Phase 0 ✅ · Phase 1 ✅ · Phase 2 next
 > **Scope:** frontend · backend · database
-> **Baseline:** `main` @ `f893d9b`, working tree has 47 modified + 2 untracked files (see Phase 1)
+> **Baseline:** `main` @ `f893d9b` + `8e4ed7a`
 > **Related:** [`BUGS.md`](./BUGS.md) (round 1 — 33 findings, all fixed) · [`PROGRESS.md`](./PROGRESS.md) · [`project.md`](./project.md)
 
 ---
@@ -133,24 +133,55 @@ That is the target — not a bolder palette.
 
 ---
 
-### Phase 1 — Land the uncommitted WIP
-**Axis:** BE/DB · **Unblocks every later phase**
+### Phase 1 — Land the uncommitted WIP ✅ **COMPLETE**
+**Axis:** BE/DB · **Completed 2026-10-08**
 
-Working tree: 47 modified + 2 untracked (`lib/db/selects.ts`, `lib/html-escape.ts`). Adds
-`hospitalId` to Doctor/Nurse/Room/Bed/Department, 9 new indexes, and required JWT secrets.
-**No database has these indexes yet** — the `2026-08-09` backup predates them.
+Working tree was 47 modified + 2 untracked (`lib/db/selects.ts`, `lib/html-escape.ts`).
 
-- [ ] `npx prisma db push`
-- [ ] `npx tsc --noEmit` → `npm run lint` → `npm run build`
-- [ ] **Restore HEAD's `lib/sequences.ts` doc comment.**
-      The *algorithm* is unchanged (both versions iterate `load()` and take the numeric max; all 32
-      call sites are unbounded — verified 0 use `take:`). But the new comment instructs future
-      callers to pass `findMany({ take: 100 })`, which is precisely the bug HEAD's comment warned
-      against (BUGS.md #29, "fixed" in `15c24e7`). Keep the code, restore the comment.
-- [ ] README: JWT secrets are now **required**, no DB-derived fallback. This is a breaking boot-time change.
+- [x] **Backup taken first** → `backups/2026-10-07_19-13-35/dump.gz` (Atlas `atlas-rnfde6-shard-0`)
+- [x] `prisma validate` → valid. **`db push` was a no-op** — all 9 indexes were already live on Atlas
+      (verified individually via `mongosh`). Only the code/schema files were uncommitted, not the DB.
+- [x] Gates: `tsc --noEmit` exit 0 · `lint` 0 errors / 12 pre-existing warnings · `build` succeeds
 
-**Verify:** the 9 new indexes appear in `prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma`
-output (e.g. `[+] Index User_hospitalId_idx on ({"hospitalId":1})`).
+#### Bug found and fixed — the WIP was silently broken
+
+`hospitalId` was added to the `Doctor`/`Nurse`/`Room`/`Bed` models, but **5 seed create sites never
+wrote it**, so every one of those documents had `hospitalId: null` in the live database:
+
+| Collection | total | scoped | |
+| --- | --- | --- | --- |
+| `Doctor` | 30 | **0** | `topUpDoctors` set `hospitalId` on the `User`, not the `Doctor` profile |
+| `Nurse` | 20 | **0** | same pattern |
+| `Room` | 4 | **0** | `seedMasterData` room upsert omitted it |
+| `Bed` | 7 | **0** | bed `createMany` omitted it |
+| `Medicine` | 100 | 90 | 10 unscoped |
+
+This is exactly the failure Phase 6 would have hit: adding `where.hospitalId = actor.hospitalId`
+would have returned **zero doctors, nurses, rooms and beds**.
+
+- [x] Fixed all 5 seed sites to write `hospitalId`
+- [x] **Backfilled 833 documents** on Atlas (fill-if-absent only, never overwrote existing values),
+      including 503 `Appointment`, 192 `AuditLog`, 44 `Notification`, 9 `Role`
+- [x] Verified: all 12 tenant-bearing collections now 100% scoped
+
+#### Also completed
+
+- [x] **Closed 6 more tenant leaks** (the Phase 6a work, done early since the data was already correct).
+      `listDepartments` · `listDoctors` · `listNurses` · `listRooms` (`services/master-data.ts`) and
+      `listMedicines` · `listSuppliers` · `listPurchaseOrders` · `listStockTransactions` ·
+      `listSales` (`services/pharmacy.ts`) all took no `actor` at all. Now take `Actor` and scope,
+      matching the existing pattern at `clinical.ts:28`. 5 route callers threaded.
+- [x] **Restored HEAD's `lib/sequences.ts` doc comment** (algorithm untouched; the new comment would
+      have reintroduced BUGS.md #29 for future callers)
+- [x] **Removed the last hardcoded seed passwords.** `topUpDoctors`/`topUpNurses` still called
+      `hashPassword("Doctor@1234")` / `"Nurse@1234"` — ~48 accounts with publicly-known credentials,
+      bypassing `SEED_ADMIN_PASSWORD` entirely. Now resolved once via `resolveSeedPassword()`.
+      Also fixed a latent bug: the old code generated a random password but then generated a
+      *second, different* one for the actual hash.
+- [x] README: documented that JWT secrets are **required** (no DB-derived fallback) with a
+      generation command, plus the `SEED_ADMIN_PASSWORD` warning
+
+**Deferred to later phases:** 4c error boundaries · 4b teal cleanup · Phase 5/6 schema constraints.
 
 ---
 

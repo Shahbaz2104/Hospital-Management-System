@@ -222,7 +222,8 @@ export function PharmacyPage() {
     const items = parseJsonArray<{ name: string; quantity: number; unitPrice: number }>(sale.items, []);
     const w = window.open("", "_blank", "width=380,height=640");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>Receipt — ${sale.saleNo}</title>
+    const e = (s: unknown) => s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    w.document.write(`<!doctype html><html><head><title>Receipt — ${e(sale.saleNo)}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:ui-sans-serif,system-ui,sans-serif;background:#f1f5f9;padding:24px;color:#0f172a}
@@ -241,13 +242,13 @@ export function PharmacyPage() {
       </style></head><body><div class="sheet">
         <div class="head"><h1>City Care Hospital</h1><p>Pharmacy Receipt</p></div>
         <div class="body">
-          <div class="row"><span>Receipt</span><span class="mono">${sale.saleNo}</span></div>
-          <div class="row"><span>Patient</span><span>${sale.patient.firstName} ${sale.patient.lastName}</span></div>
+          <div class="row"><span>Receipt</span><span class="mono">${e(sale.saleNo)}</span></div>
+          <div class="row"><span>Patient</span><span>${e(sale.patient.firstName)} ${e(sale.patient.lastName)}</span></div>
           <div class="row"><span>Date</span><span>${format(new Date(sale.createdAt), "MMM d, yyyy HH:mm")}</span></div>
           <table>
             <thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Amt</th></tr></thead>
             <tbody>
-              ${items.map((i) => `<tr><td>${i.name}</td><td style="text-align:right">${i.quantity}</td><td style="text-align:right">$${(i.quantity * i.unitPrice).toFixed(2)}</td></tr>`).join("")}
+              ${items.map((i) => `<tr><td>${e(i.name)}</td><td style="text-align:right">${i.quantity}</td><td style="text-align:right">$${(i.quantity * i.unitPrice).toFixed(2)}</td></tr>`).join("")}
             </tbody>
           </table>
           <div class="total"><span>Total</span><span>$${sale.total.toFixed(2)}</span></div>

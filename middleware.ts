@@ -21,7 +21,7 @@ const PUBLIC_PATHS = [
   "/reset-password",
 ];
 
-/** Coarse route→role gate (fine-grained permission checks happen server-side). */
+/** Coarse route->role gate (fine-grained permission checks happen server-side). */
 const ROUTE_ROLES: Record<string, RoleKey[]> = {
   "/patients": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PHARMACIST", "LAB_TECHNICIAN", "ACCOUNTANT", "PATIENT"],
   "/doctors": ["SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR"],
@@ -65,11 +65,26 @@ async function verifyToken(
   }
 }
 
+function withSecurityHeaders(res: NextResponse): NextResponse {
+  res.headers.set("X-Content-Type-Options", "nosniff");
+  res.headers.set("X-Frame-Options", "DENY");
+  res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=()"
+  );
+  if (process.env.NODE_ENV === "production") {
+    res.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload"
+    );
+  }
+  return res;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Same secret resolution as the app (explicit env var, else derived from
-  // DATABASE_URL) — otherwise the role gate silently never matches.
   const { access: accessSecret } = await resolveJwtSecrets();
   const secret = new TextEncoder().encode(accessSecret);
 
@@ -85,19 +100,17 @@ export async function middleware(req: NextRequest) {
 
   // ---- API: let route guards handle auth; block unknown origins on state-changing calls.
   if (isApi) {
-    if (isAuthApi || isPublicApi) return NextResponse.next();
+    if (isAuthApi || isPublicApi) return withSecurityHeaders(NextResponse.next());
     if (!payload && !refreshToken) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return withSecurityHeaders(NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 }));
     }
     if (req.method !== "GET" && !isSameOrigin(req)) {
-      return NextResponse.json({ success: false, error: "Invalid origin" }, { status: 403 });
+      return withSecurityHeaders(NextResponse.json({ success: false, error: "Invalid origin" }, { status: 403 }));
     }
-    return NextResponse.next();
+    return withSecurityHeaders(NextResponse.next());
   }
 
   // ---- Auth pages: only auto-redirect when the access token is still valid.
-  // (A stale refresh cookie must not redirect, or we loop /login -> /dashboard
-  // forever since the layout can't resolve the session.)
   if (isPublic) {
     if (payload) {
       const url = req.nextUrl.clone();
@@ -133,24 +146,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  const response = NextResponse.next();
-
-  // Security headers.
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()"
-  );
-  if (process.env.NODE_ENV === "production") {
-    response.headers.set(
-      "Strict-Transport-Security",
-      "max-age=63072000; includeSubDomains; preload"
-    );
-  }
-
-  return response;
+  return withSecurityHeaders(NextResponse.next());
 }
 
 function isSameOrigin(req: NextRequest): boolean {

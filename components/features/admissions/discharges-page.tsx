@@ -42,7 +42,8 @@ export function DischargesPage() {
     const days = differenceInCalendarDays(new Date(a.dischargeAt), new Date(a.admittedAt));
     const w = window.open("", "_blank", "width=440,height=680");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>Discharge Summary — ${a.admissionNo}</title>
+    const e = (s: unknown) => s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    w.document.write(`<!doctype html><html><head><title>Discharge Summary — ${e(a.admissionNo)}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:ui-sans-serif,system-ui,sans-serif;background:#f1f5f9;padding:24px;color:#0f172a}
@@ -61,15 +62,15 @@ export function DischargesPage() {
       </style></head><body><div class="sheet">
         <div class="head"><h1>City Care Hospital</h1><p>In-patient Discharge Summary</p></div>
         <div class="body">
-          <div class="name">${a.patient.firstName} ${a.patient.lastName}</div>
-          <div class="mono">${a.patient.patientNo} · ${a.admissionNo}</div>
+          <div class="name">${e(a.patient.firstName)} ${e(a.patient.lastName)}</div>
+          <div class="mono">${e(a.patient.patientNo)} · ${e(a.admissionNo)}</div>
           <div style="margin-top:12px">
             <div class="line"><span>Admitted</span><b>${format(new Date(a.admittedAt), "MMM d, yyyy HH:mm")}</b></div>
             <div class="line"><span>Discharged</span><b>${format(new Date(a.dischargeAt), "MMM d, yyyy HH:mm")}</b></div>
             <div class="line"><span>Length of stay</span><b>${days} day${days === 1 ? "" : "s"}</b></div>
-            <div class="line"><span>Bed</span><b>${a.bed ? `${a.bed.number} (${a.bed.room.type})` : "—"}</b></div>
-            ${a.diagnosis ? `<div class="line"><span>Diagnosis</span><b>${a.diagnosis}</b></div>` : ""}
-            ${a.reason ? `<div class="line"><span>Reason</span><b>${a.reason}</b></div>` : ""}
+            <div class="line"><span>Bed</span><b>${a.bed ? `${e(a.bed.number)} (${e(a.bed.room.type)})` : "—"}</b></div>
+            ${a.diagnosis ? `<div class="line"><span>Diagnosis</span><b>${e(a.diagnosis)}</b></div>` : ""}
+            ${a.reason ? `<div class="line"><span>Reason</span><b>${e(a.reason)}</b></div>` : ""}
           </div>
         </div>
         <div class="foot">Follow-up visit advised within 2 weeks. Contact OPD for appointments.</div>

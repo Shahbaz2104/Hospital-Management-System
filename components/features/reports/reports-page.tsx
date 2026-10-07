@@ -82,23 +82,24 @@ export function ReportsPage() {
   function printReport() {
     const win = window.open("", "_blank", "width=1000,height=700");
     if (!win || !data) return;
+    const e = (s: unknown) => s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
     const rows = data.rows
       .map(
         (row) =>
           `<tr>${data.columns
             .map(
               (c) =>
-                `<td style="text-align:${c.align === "right" ? "right" : "left"}; padding:6px 10px; border:1px solid #ddd; font-size:12px;">${String(row[c.key] ?? "—")}</td>`
+                `<td style="text-align:${c.align === "right" ? "right" : "left"}; padding:6px 10px; border:1px solid #ddd; font-size:12px;">${e(String(row[c.key] ?? "—"))}</td>`
             )
             .join("")}</tr>`
       )
       .join("");
-    win.document.write(`<!doctype html><html><head><title>${data.title}</title>
+    win.document.write(`<!doctype html><html><head><title>${e(data.title)}</title>
       <style>body{font-family:system-ui,sans-serif;padding:32px}h1{font-size:20px}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#f1f5f9;text-align:left;padding:6px 10px;border:1px solid #ddd;font-size:12px}.meta{color:#555;font-size:12px}</style>
-      </head><body><h1>${data.title}</h1>
-      <p class="meta">Range: ${from} → ${to} · Generated ${new Date().toLocaleString()}</p>
-      ${data.summary.map((s) => `<p class="meta"><strong>${s.label}:</strong> ${s.value}</p>`).join("")}
-      <table><thead><tr>${data.columns.map((c) => `<th>${c.label}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>
+      </head><body><h1>${e(data.title)}</h1>
+      <p class="meta">Range: ${e(from)} → ${e(to)} · Generated ${new Date().toLocaleString()}</p>
+      ${data.summary.map((s) => `<p class="meta"><strong>${e(s.label)}:</strong> ${e(String(s.value))}</p>`).join("")}
+      <table><thead><tr>${data.columns.map((c) => `<th>${e(c.label)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>
       </body></html>`);
     win.document.close();
     win.print();

@@ -5,12 +5,15 @@ import { createConsultation, listConsultations } from "@/services/consultations"
 import { consultationSchema } from "@/validators/consultations";
 
 export const GET = route(async (req: Request) => {
-  await requirePermission("consultations:read");
+  const actor = await requirePermission("consultations:read");
 
   const url = new URL(req.url);
   const patientId = url.searchParams.get("patientId") ?? undefined;
 
-  const consultations = await listConsultations({ patientId });
+  const consultations = await listConsultations(
+    { userId: actor.id, hospitalId: actor.hospitalId },
+    { patientId }
+  );
   return ok({ items: consultations });
 });
 

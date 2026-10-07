@@ -5,11 +5,12 @@ import { createStockTransaction, listStockTransactions } from "@/services/pharma
 import { stockTransactionSchema } from "@/validators/pharmacy";
 
 export const GET = route(async (req) => {
-  await requirePermission("inventory:read");
+  const actor = await requirePermission("inventory:read");
   const params = new URL(req.url).searchParams;
-  const items = await listStockTransactions({
-    medicineId: params.get("medicineId") ?? undefined,
-  });
+  const items = await listStockTransactions(
+    { userId: actor.id, hospitalId: actor.hospitalId },
+    { medicineId: params.get("medicineId") ?? undefined }
+  );
   return ok({ items });
 });
 

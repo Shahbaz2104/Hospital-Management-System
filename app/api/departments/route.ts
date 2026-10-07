@@ -2,6 +2,7 @@ import { requirePermission } from "@/lib/auth/guards";
 import { assertInput, getIp, ok, route } from "@/lib/http";
 import { insensitiveContains, parseListParams } from "@/lib/pagination";
 import { db } from "@/lib/db";
+import { safeUserSelect } from "@/lib/db/selects";
 import { logAudit } from "@/services/audit";
 import { createDepartment } from "@/services/master-data";
 import { departmentSchema } from "@/validators/master-data";
@@ -21,7 +22,7 @@ export const GET = route(async (req: Request) => {
     db.department.findMany({
       where,
       include: {
-        headDoctor: { include: { user: true } },
+        headDoctor: { select: { user: { select: safeUserSelect } } },
         _count: { select: { doctors: true, nurses: true, rooms: true } },
       },
       orderBy: { name: "asc" },

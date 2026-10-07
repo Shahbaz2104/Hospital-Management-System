@@ -9,9 +9,10 @@ async function nextAdmissionNo(): Promise<string> {
   return nextSeq(() => db.admission.findMany({ select: { admissionNo: true } }), "admissionNo", "IPD");
 }
 
-export async function listAdmissions(filters: { status?: string } = {}) {
+export async function listAdmissions(actor: Actor, filters: { status?: string } = {}) {
   const where: Record<string, unknown> = {};
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
 
   return db.admission.findMany({
     where,

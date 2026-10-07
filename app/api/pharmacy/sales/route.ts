@@ -5,9 +5,12 @@ import { createSale, listSales } from "@/services/pharmacy";
 import { saleSchema } from "@/validators/pharmacy";
 
 export const GET = route(async (req) => {
-  await requirePermission("pharmacy:read");
+  const actor = await requirePermission("pharmacy:read");
   const params = new URL(req.url).searchParams;
-  const items = await listSales({ patientId: params.get("patientId") ?? undefined });
+  const items = await listSales(
+    { userId: actor.id, hospitalId: actor.hospitalId },
+    { patientId: params.get("patientId") ?? undefined }
+  );
   return ok({ items });
 });
 

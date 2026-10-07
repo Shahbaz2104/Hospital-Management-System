@@ -4,9 +4,9 @@ import { addEvent, listEvents } from "@/services/emergency";
 import { emergencyEventSchema } from "@/validators/emergency";
 
 export const GET = route(async (req, ctx) => {
-  await requirePermission("emergency:read");
+  const actor = await requirePermission("emergency:read");
   const { id } = await ctx.params;
-  return ok(await listEvents(id));
+  return ok(await listEvents(id, { hospitalId: actor.hospitalId }));
 });
 
 export const POST = route(async (req, ctx) => {

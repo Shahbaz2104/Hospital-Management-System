@@ -5,7 +5,7 @@ import { listEvents, updateEmergencyCase } from "@/services/emergency";
 import { emergencyUpdateSchema } from "@/validators/emergency";
 
 export const GET = route(async (req, ctx) => {
-  await requirePermission("emergency:read");
+  const actor = await requirePermission("emergency:read");
   const { id } = await ctx.params;
   const case_ = await db.emergencyCase.findUnique({
     where: { id },
@@ -17,7 +17,7 @@ export const GET = route(async (req, ctx) => {
     },
   });
   if (!case_) throw new ApiError(404, "Emergency case not found");
-  const events = await listEvents(id);
+  const events = await listEvents(id, { hospitalId: actor.hospitalId });
   return ok({ case: case_, events });
 });
 

@@ -5,9 +5,12 @@ import { createPurchaseOrder, listPurchaseOrders } from "@/services/pharmacy";
 import { purchaseOrderSchema } from "@/validators/pharmacy";
 
 export const GET = route(async (req) => {
-  await requirePermission("pharmacy:read");
+  const actor = await requirePermission("pharmacy:read");
   const params = new URL(req.url).searchParams;
-  const items = await listPurchaseOrders({ status: params.get("status") ?? "ALL" });
+  const items = await listPurchaseOrders(
+    { userId: actor.id, hospitalId: actor.hospitalId },
+    { status: params.get("status") ?? "ALL" }
+  );
   return ok({ items });
 });
 

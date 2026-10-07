@@ -31,8 +31,9 @@ async function nextNumber(kind: "po" | "tx" | "sale"): Promise<string> {
 // Medicines
 // ---------------------------------------------------------------------------
 
-export async function listMedicines(filters: { category?: string; search?: string } = {}) {
+export async function listMedicines(actor: Actor, filters: { category?: string; search?: string } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.category && filters.category !== "ALL") where.category = filters.category;
   if (filters.search) where.name = { contains: filters.search, mode: "insensitive" };
 
@@ -75,9 +76,13 @@ export async function deleteMedicine(_actor: Actor, id: string) {
 // Suppliers
 // ---------------------------------------------------------------------------
 
-export async function listSuppliers(activeOnly = false) {
+export async function listSuppliers(actor: Actor, activeOnly = false) {
+  const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
+  if (activeOnly) where.active = true;
+
   return db.supplier.findMany({
-    where: activeOnly ? { active: true } : undefined,
+    where,
     orderBy: { name: "asc" },
   });
 }
@@ -93,8 +98,9 @@ export async function createSupplier(actor: Actor, input: { name: string; contac
 // Purchase orders (stock in)
 // ---------------------------------------------------------------------------
 
-export async function listPurchaseOrders(filters: { status?: string } = {}) {
+export async function listPurchaseOrders(actor: Actor, filters: { status?: string } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
 
   return db.purchaseOrder.findMany({
@@ -203,8 +209,9 @@ export async function cancelPurchaseOrder(actor: Actor, id: string) {
 // Stock ledger (manual in/out/adjustment)
 // ---------------------------------------------------------------------------
 
-export async function listStockTransactions(filters: { medicineId?: string } = {}) {
+export async function listStockTransactions(actor: Actor, filters: { medicineId?: string } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.medicineId) where.medicineId = filters.medicineId;
 
   return db.stockTransaction.findMany({
@@ -221,36 +228,41 @@ export async function createStockTransaction(
   actor: Actor,
   input: { medicineId: string; type: string; quantity: number; reason?: string; batchNo?: string; expiryDate?: Date }
 ) {
-  const medicine = await db.medicine.findUnique({ where: { id: input.medicineId } });
-  if (!medicine) throw new ApiError(404, "Medicine not found");
-
   const signed = input.type === "OUT" ? -input.quantity : input.quantity;
-  const balanceAfter = medicine.stock + signed;
-  if (balanceAfter < 0) {
-    throw new ApiError(400, `Insufficient stock — only ${medicine.stock} ${medicine.unit}(s) available`);
-  }
 
-  const txNo = await nextNumber("tx");
-  const tx = await db.stockTransaction.create({
-    data: {
-      txNo,
-      medicineId: input.medicineId,
-      type: input.type,
-      reason: input.reason ?? "STOCKTAKE",
-      quantity: signed,
-      balanceAfter,
-      batchNo: input.batchNo ?? null,
-      expiryDate: input.expiryDate ?? null,
-      createdById: actor.userId,
-      hospitalId: actor.hospitalId ?? null,
-    },
-  });
-  await db.medicine.update({
-    where: { id: input.medicineId },
-    data: {
-      stock: balanceAfter,
-      ...(input.expiryDate ? { expiryDate: input.expiryDate } : {}),
-    },
+  const tx = await db.$transaction(async (tx) => {
+    const medicine = await tx.medicine.findUnique({ where: { id: input.medicineId } });
+    if (!medicine) throw new ApiError(404, "Medicine not found");
+
+    const balanceAfter = medicine.stock + signed;
+    if (balanceAfter < 0) {
+      throw new ApiError(400, `Insufficient stock — only ${medicine.stock} ${medicine.unit}(s) available`);
+    }
+
+    const txNo = await nextNumber("tx");
+    const record = await tx.stockTransaction.create({
+      data: {
+        txNo,
+        medicineId: input.medicineId,
+        type: input.type,
+        reason: input.reason ?? "STOCKTAKE",
+        quantity: signed,
+        balanceAfter,
+        batchNo: input.batchNo ?? null,
+        expiryDate: input.expiryDate ?? null,
+        createdById: actor.userId,
+        hospitalId: actor.hospitalId ?? null,
+      },
+    });
+    await tx.medicine.update({
+      where: { id: input.medicineId },
+      data: {
+        stock: balanceAfter,
+        ...(input.expiryDate ? { expiryDate: input.expiryDate } : {}),
+      },
+    });
+
+    return record;
   });
 
   return tx;
@@ -260,8 +272,9 @@ export async function createStockTransaction(
 // Medicine sales (dispensing)
 // ---------------------------------------------------------------------------
 
-export async function listSales(filters: { patientId?: string } = {}) {
+export async function listSales(actor: Actor, filters: { patientId?: string } = {}) {
   const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
   if (filters.patientId) where.patientId = filters.patientId;
 
   return db.medicineSale.findMany({

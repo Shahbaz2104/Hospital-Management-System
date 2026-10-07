@@ -239,7 +239,8 @@ export function LaboratoryPage() {
     const results = parseJsonArray<{ testId: string; name: string; value: string; unit?: string; normalRange?: string; flag?: string }>(o.results, []);
     const w = window.open("", "_blank", "width=480,height=700");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>Lab Report — ${o.orderNo}</title>
+    const e = (s: unknown) => s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    w.document.write(`<!doctype html><html><head><title>Lab Report — ${e(o.orderNo)}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:ui-sans-serif,system-ui,sans-serif;background:#f1f5f9;padding:24px;color:#0f172a}
@@ -257,16 +258,16 @@ export function LaboratoryPage() {
         .high{color:#dc2626}.low{color:#0E7C6B}.normal{color:#2E9E6B}
         .foot{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 20px;font-size:10px;color:#94a3b8}
       </style></head><body><div class="sheet">
-        <div class="head"><div><h1>City Care Hospital</h1><p>Laboratory Report</p></div><div style="text-align:right"><b style="font-size:13px">${o.orderNo}</b><p>${o.status === "COMPLETED" ? "Completed" : o.status.toLowerCase()}</p></div></div>
+        <div class="head"><div><h1>City Care Hospital</h1><p>Laboratory Report</p></div><div style="text-align:right"><b style="font-size:13px">${e(o.orderNo)}</b><p>${o.status === "COMPLETED" ? "Completed" : e(o.status.toLowerCase())}</p></div></div>
         <div class="body">
-          <div class="name">${o.patient.firstName} ${o.patient.lastName}</div>
-          <div class="mono">${o.patient.patientNo}</div>
+          <div class="name">${e(o.patient.firstName)} ${e(o.patient.lastName)}</div>
+          <div class="mono">${e(o.patient.patientNo)}</div>
           <table>
             <thead><tr><th>Test</th><th>Result</th><th>Range</th><th>Flag</th></tr></thead>
             <tbody>
               ${results.length > 0
-                ? results.map((r) => `<tr><td>${r.name}</td><td>${r.value}${r.unit ? ` ${r.unit}` : ""}</td><td style="color:#64748b">${r.normalRange ?? "—"}</td><td class="flag ${(r.flag ?? "").toLowerCase()}">${r.flag ?? ""}</td></tr>`).join("")
-                : tests.map((t) => `<tr><td>${t.name}</td><td colspan="3" style="color:#94a3b8">Pending</td></tr>`).join("")}
+                ? results.map((r) => `<tr><td>${e(r.name)}</td><td>${e(r.value)}${r.unit ? ` ${e(r.unit)}` : ""}</td><td style="color:#64748b">${e(r.normalRange ?? "—")}</td><td class="flag ${e((r.flag ?? "").toLowerCase())}">${e(r.flag ?? "")}</td></tr>`).join("")
+                : tests.map((t) => `<tr><td>${e(t.name)}</td><td colspan="3" style="color:#94a3b8">Pending</td></tr>`).join("")}
             </tbody>
           </table>
         </div>

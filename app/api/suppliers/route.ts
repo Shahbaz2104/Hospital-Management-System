@@ -5,9 +5,9 @@ import { createSupplier, listSuppliers } from "@/services/pharmacy";
 import { supplierSchema } from "@/validators/pharmacy";
 
 export const GET = route(async (req) => {
-  await requirePermission("inventory:read");
+  const actor = await requirePermission("inventory:read");
   const params = new URL(req.url).searchParams;
-  const items = await listSuppliers(params.get("active") === "true");
+  const items = await listSuppliers({ userId: actor.id, hospitalId: actor.hospitalId }, params.get("active") === "true");
   return ok({ items });
 });
 

@@ -5,13 +5,16 @@ import { listPayments, recordPayment } from "@/services/billing";
 import { recordPaymentSchema } from "@/validators/billing";
 
 export const GET = route(async (req) => {
-  await requirePermission("payments:read");
+  const actor = await requirePermission("payments:read");
   const params = new URL(req.url).searchParams;
-  const items = await listPayments({
-    method: params.get("method") ?? "ALL",
-    status: params.get("status") ?? "ALL",
-    search: params.get("search") ?? undefined,
-  });
+  const items = await listPayments(
+    { userId: actor.id, hospitalId: actor.hospitalId },
+    {
+      method: params.get("method") ?? "ALL",
+      status: params.get("status") ?? "ALL",
+      search: params.get("search") ?? undefined,
+    }
+  );
   return ok({ items });
 });
 

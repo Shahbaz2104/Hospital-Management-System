@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../lib/auth/password";
 import {
@@ -9,6 +10,23 @@ import {
 } from "../constants/permissions";
 
 const prisma = new PrismaClient();
+
+/**
+ * Password shared by every demo account this script creates, including the
+ * bulk-generated doctor/Nurse top-ups. Resolved once from SEED_ADMIN_PASSWORD;
+ * when unset or too short a random value is generated and printed, so a
+ * re-seed never silently falls back to a hardcoded literal.
+ */
+function resolveSeedPassword(): string {
+  const fromEnv = process.env.SEED_ADMIN_PASSWORD;
+  if (fromEnv && fromEnv.length >= 8) return fromEnv;
+  const generated = randomBytes(12).toString("base64url");
+  console.warn(`⚠ SEED_ADMIN_PASSWORD not set or too short — using generated: ${generated}`);
+  console.warn(`  Set SEED_ADMIN_PASSWORD in .env before running seed for known credentials.`);
+  return generated;
+}
+
+const SEED_PASSWORD = resolveSeedPassword();
 
 function permissionMeta(key: PermissionKey) {
   const [module, action] = key.split(":");
@@ -77,16 +95,18 @@ async function seedUsers() {
   const hospital = await prisma.hospital.findFirst();
   const hospitalId = hospital?.id ?? undefined;
 
-  const accounts: { email: string; password: string; role: RoleKey; name: string }[] = [
-    { email: "admin@hospital.com", password: "Admin@1234", role: "SUPER_ADMIN", name: "Ayesha Rahman" },
-    { email: "hospital@hospital.com", password: "Admin@1234", role: "HOSPITAL_ADMIN", name: "Imran Sheikh" },
-    { email: "doctor@hospital.com", password: "Doctor@1234", role: "DOCTOR", name: "Dr. Arjun Mehta" },
-    { email: "nurse@hospital.com", password: "Nurse@1234", role: "NURSE", name: "Priya Nair" },
-    { email: "reception@hospital.com", password: "Reception@1234", role: "RECEPTIONIST", name: "Fatima Noor" },
-    { email: "pharmacist@hospital.com", password: "Pharma@1234", role: "PHARMACIST", name: "Rohan Gupta" },
-    { email: "lab@hospital.com", password: "LabTech@1234", role: "LAB_TECHNICIAN", name: "Sana Iqbal" },
-    { email: "account@hospital.com", password: "Account@1234", role: "ACCOUNTANT", name: "Vikram Joshi" },
-    { email: "patient@hospital.com", password: "Patient@1234", role: "PATIENT", name: "Zara Ali" },
+  const userPassword = SEED_PASSWORD;
+
+  const accounts: { email: string; role: RoleKey; name: string }[] = [
+    { email: "admin@hospital.com", role: "SUPER_ADMIN", name: "Ayesha Rahman" },
+    { email: "hospital@hospital.com", role: "HOSPITAL_ADMIN", name: "Imran Sheikh" },
+    { email: "doctor@hospital.com", role: "DOCTOR", name: "Dr. Arjun Mehta" },
+    { email: "nurse@hospital.com", role: "NURSE", name: "Priya Nair" },
+    { email: "reception@hospital.com", role: "RECEPTIONIST", name: "Fatima Noor" },
+    { email: "pharmacist@hospital.com", role: "PHARMACIST", name: "Rohan Gupta" },
+    { email: "lab@hospital.com", role: "LAB_TECHNICIAN", name: "Sana Iqbal" },
+    { email: "account@hospital.com", role: "ACCOUNTANT", name: "Vikram Joshi" },
+    { email: "patient@hospital.com", role: "PATIENT", name: "Zara Ali" },
   ];
 
   for (const acc of accounts) {
@@ -101,7 +121,7 @@ async function seedUsers() {
         email: acc.email,
         firstName,
         lastName: rest.join(" "),
-        passwordHash: await hashPassword(acc.password),
+        passwordHash: await hashPassword(userPassword),
         roleId: role.id,
         hospitalId,
         emailVerified: true,
@@ -154,6 +174,7 @@ async function seedMasterData() {
         licenseNumber: "MD-CA-88421",
         available: true,
         bio: "Interventional cardiologist specialising in preventive heart health.",
+        hospitalId,
       },
     });
     const dept = await prisma.department.findUnique({ where: { code: "CARD" } });
@@ -176,6 +197,7 @@ async function seedMasterData() {
         shift: "DAY",
         licenseNo: "RN-48371",
         designation: "Head Nurse",
+        hospitalId,
       },
     });
   }
@@ -198,6 +220,7 @@ async function seedMasterData() {
         capacity: r.capacity,
         ratePerDay: r.ratePerDay,
         departmentId: departments.get(r.dept)?.id ?? null,
+        hospitalId,
       },
     });
     const existing = await prisma.bed.count({ where: { roomId: room.id } });
@@ -206,6 +229,7 @@ async function seedMasterData() {
         data: Array.from({ length: r.beds }, (_, i) => ({
           number: `${r.number}-B${i + 1}`,
           roomId: room.id,
+          hospitalId,
         })),
       });
     }
@@ -1005,7 +1029,7 @@ async function topUpDoctors(target: number) {
         firstName: first,
         lastName: last,
         title: pick(STAFF_TITLES),
-        passwordHash: await hashPassword("Doctor@1234"),
+        passwordHash: await hashPassword(SEED_PASSWORD),
         roleId: role.id,
         hospitalId: hospital?.id ?? null,
         emailVerified: true,
@@ -1022,6 +1046,7 @@ async function topUpDoctors(target: number) {
         consultationFee: 60 + (no % 15) * 15,
         licenseNumber: `MD-SC-${10000 + no}`,
         available: true,
+        hospitalId: hospital?.id ?? null,
       },
     });
   }
@@ -1050,7 +1075,7 @@ async function topUpNurses(target: number) {
         email,
         firstName: first,
         lastName: last,
-        passwordHash: await hashPassword("Nurse@1234"),
+        passwordHash: await hashPassword(SEED_PASSWORD),
         roleId: role.id,
         hospitalId: hospital?.id ?? null,
         emailVerified: true,
@@ -1065,6 +1090,7 @@ async function topUpNurses(target: number) {
         shift: pick(["DAY", "NIGHT", "EVENING"]),
         licenseNo: `RN-${50000 + no}`,
         designation: pick(["Staff Nurse", "Senior Nurse", "Charge Nurse"]),
+        hospitalId: hospital?.id ?? null,
       },
     });
   }

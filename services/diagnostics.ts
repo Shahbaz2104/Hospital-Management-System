@@ -16,8 +16,10 @@ async function nextRadiologyOrderNo(): Promise<string> {
 // Lab tests catalog
 // ---------------------------------------------------------------------------
 
-export async function listLabTests() {
-  return db.labTest.findMany({ orderBy: { name: "asc" } });
+export async function listLabTests(actor: Actor) {
+  const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
+  return db.labTest.findMany({ where, orderBy: { name: "asc" } });
 }
 
 export async function createLabTest(actor: Actor, input: {
@@ -48,10 +50,11 @@ export async function createLabTest(actor: Actor, input: {
 // Lab orders
 // ---------------------------------------------------------------------------
 
-export async function listLabOrders(filters: { status?: string; patientId?: string } = {}) {
+export async function listLabOrders(actor: Actor, filters: { status?: string; patientId?: string } = {}) {
   const where: Record<string, unknown> = {};
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   if (filters.patientId) where.patientId = filters.patientId;
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
 
   return db.labOrder.findMany({
     where,
@@ -153,10 +156,11 @@ export async function submitLabResults(
 // Radiology orders
 // ---------------------------------------------------------------------------
 
-export async function listRadiologyOrders(filters: { status?: string; patientId?: string } = {}) {
+export async function listRadiologyOrders(actor: Actor, filters: { status?: string; patientId?: string } = {}) {
   const where: Record<string, unknown> = {};
   if (filters.status && filters.status !== "ALL") where.status = filters.status;
   if (filters.patientId) where.patientId = filters.patientId;
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
 
   return db.radiologyOrder.findMany({
     where,

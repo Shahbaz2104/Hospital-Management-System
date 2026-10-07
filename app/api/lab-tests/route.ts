@@ -5,8 +5,8 @@ import { createLabTest, listLabTests } from "@/services/diagnostics";
 import { labTestSchema } from "@/validators/diagnostics";
 
 export const GET = route(async () => {
-  await requirePermission("laboratory:read");
-  const tests = await listLabTests();
+  const actor = await requirePermission("laboratory:read");
+  const tests = await listLabTests({ userId: actor.id, hospitalId: actor.hospitalId });
   return ok({ items: tests });
 });
 

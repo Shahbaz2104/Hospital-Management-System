@@ -32,11 +32,17 @@ npm install
 cp .env.example .env
 #   - fill in DATABASE_URL, JWT secrets, Cloudinary, SMTP, Stripe (optional)
 
+# JWT_ACCESS_SECRET and JWT_REFRESH_SECRET are REQUIRED (min 16 characters).
+# They are deliberately not derived from any other value: if they are missing
+# or too short the app refuses to boot rather than fall back to a guessable key.
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+
 # 3. Generate Prisma client + push schema
 npx prisma generate
 npx prisma db push
 
 # 4. Seed the database with demo data
+#    Set SEED_ADMIN_PASSWORD first, otherwise a random one is generated and printed.
 npm run db:seed
 
 # 5. Run the dev server

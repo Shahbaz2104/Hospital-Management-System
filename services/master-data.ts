@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/http";
 import { hashPassword } from "@/lib/auth/password";
+import { safeUserSelect } from "@/lib/db/selects";
 import { logAudit } from "@/services/audit";
 import type {
   DepartmentInput,
@@ -16,19 +17,21 @@ type Actor = { userId: string; hospitalId?: string | null };
 // Departments
 // ---------------------------------------------------------------------------
 
-export async function listDepartments(search = "") {
+export async function listDepartments(actor: Actor, search = "") {
+  const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { code: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
   return db.department.findMany({
-    where: search
-      ? {
-          OR: [
-            { name: { contains: search, mode: "insensitive" } },
-            { code: { contains: search, mode: "insensitive" } },
-          ],
-        }
-      : {},
+    where,
     include: {
       _count: { select: { doctors: true, nurses: true, rooms: true } },
-      headDoctor: { include: { user: true } },
+      headDoctor: { select: { user: { select: safeUserSelect } } },
     },
     orderBy: { name: "asc" },
   });
@@ -88,18 +91,20 @@ export async function deleteDepartment(actor: Actor, id: string) {
 // Doctors
 // ---------------------------------------------------------------------------
 
-export async function listDoctors(search = "") {
+export async function listDoctors(actor: Actor, search = "") {
+  const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
+  if (search) {
+    where.OR = [
+      { user: { firstName: { contains: search, mode: "insensitive" } } },
+      { user: { lastName: { contains: search, mode: "insensitive" } } },
+      { specialization: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
   return db.doctor.findMany({
-    where: search
-      ? {
-          OR: [
-            { user: { firstName: { contains: search, mode: "insensitive" } } },
-            { user: { lastName: { contains: search, mode: "insensitive" } } },
-            { specialization: { contains: search, mode: "insensitive" } },
-          ],
-        }
-      : {},
-    include: { user: true, department: true },
+    where,
+    include: { user: { select: safeUserSelect }, department: true },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -166,7 +171,7 @@ export async function updateDoctor(
 }
 
 export async function deleteDoctor(actor: Actor, id: string) {
-  const doctor = await db.doctor.findUnique({ where: { id }, include: { user: true } });
+  const doctor = await db.doctor.findUnique({ where: { id }, include: { user: { select: { email: true } } } });
   if (!doctor) throw new ApiError(404, "Doctor not found");
 
   await db.doctor.delete({ where: { id } }); // cascades to user
@@ -183,17 +188,19 @@ export async function deleteDoctor(actor: Actor, id: string) {
 // Nurses
 // ---------------------------------------------------------------------------
 
-export async function listNurses(search = "") {
+export async function listNurses(actor: Actor, search = "") {
+  const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
+  if (search) {
+    where.OR = [
+      { user: { firstName: { contains: search, mode: "insensitive" } } },
+      { user: { lastName: { contains: search, mode: "insensitive" } } },
+    ];
+  }
+
   return db.nurse.findMany({
-    where: search
-      ? {
-          OR: [
-            { user: { firstName: { contains: search, mode: "insensitive" } } },
-            { user: { lastName: { contains: search, mode: "insensitive" } } },
-          ],
-        }
-      : {},
-    include: { user: true, department: true },
+    where,
+    include: { user: { select: safeUserSelect }, department: true },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -243,16 +250,18 @@ export async function deleteNurse(_actor: Actor, id: string) {
 // Rooms & Beds
 // ---------------------------------------------------------------------------
 
-export async function listRooms(search = "") {
+export async function listRooms(actor: Actor, search = "") {
+  const where: Record<string, unknown> = {};
+  if (actor.hospitalId) where.hospitalId = actor.hospitalId;
+  if (search) {
+    where.OR = [
+      { number: { contains: search, mode: "insensitive" } },
+      { name: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
   return db.room.findMany({
-    where: search
-      ? {
-          OR: [
-            { number: { contains: search, mode: "insensitive" } },
-            { name: { contains: search, mode: "insensitive" } },
-          ],
-        }
-      : {},
+    where,
     include: {
       department: true,
       beds: { orderBy: { number: "asc" } },

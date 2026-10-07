@@ -5,9 +5,12 @@ import { createClaim, listClaims } from "@/services/billing";
 import { createClaimSchema } from "@/validators/billing";
 
 export const GET = route(async (req) => {
-  await requirePermission("insurance:read");
+  const actor = await requirePermission("insurance:read");
   const params = new URL(req.url).searchParams;
-  const items = await listClaims({ status: params.get("status") ?? "ALL" });
+  const items = await listClaims(
+    { userId: actor.id, hospitalId: actor.hospitalId },
+    { status: params.get("status") ?? "ALL" }
+  );
   return ok({ items });
 });
 

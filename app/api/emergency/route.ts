@@ -5,10 +5,10 @@ import { emergencyCaseCreateSchema } from "@/validators/emergency";
 
 export const GET = route(async (req) => {
   const actor = await requirePermission("emergency:read");
-  void actor;
   const url = new URL(req.url);
   return ok(
     await listEmergencyCases({
+      actor,
       status: url.searchParams.get("status") ?? undefined,
       triageLevel: url.searchParams.get("triage") ?? undefined,
       search: url.searchParams.get("q") ?? undefined,

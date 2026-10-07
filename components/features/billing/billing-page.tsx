@@ -204,7 +204,8 @@ export function BillingPage() {
     const taxRate = "taxRate" in invoice ? invoice.taxRate : 0;
     const w = window.open("", "_blank", "width=760,height=900");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>Invoice — ${invoice.invoiceNo}</title>
+    const e = (s: unknown) => s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    w.document.write(`<!doctype html><html><head><title>Invoice — ${e(invoice.invoiceNo)}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:ui-sans-serif,system-ui,sans-serif;background:#f1f5f9;padding:32px;color:#0f172a}
@@ -228,16 +229,16 @@ export function BillingPage() {
       </style></head><body><div class="sheet">
         <div class="head">
           <div><h1>City Care Hospital</h1><p>123 Wellness Avenue · +(1) 555 0100</p></div>
-          <div class="invno">${invoice.invoiceNo}</div>
+          <div class="invno">${e(invoice.invoiceNo)}</div>
         </div>
         <div class="body">
-          <div class="row"><span>Patient</span><span>${invoice.patient.firstName} ${invoice.patient.lastName} (${invoice.patient.patientNo})</span></div>
+          <div class="row"><span>Patient</span><span>${e(invoice.patient.firstName)} ${e(invoice.patient.lastName)} (${e(invoice.patient.patientNo)})</span></div>
           <div class="row"><span>Date</span><span>${format(new Date(invoice.createdAt), "MMM d, yyyy HH:mm")}</span></div>
-          <div class="row"><span>Status</span><span>${invoice.status}</span></div>
+          <div class="row"><span>Status</span><span>${e(invoice.status)}</span></div>
           <table>
             <thead><tr><th>Description</th><th style="text-align:center">Qty</th><th>Amount</th></tr></thead>
             <tbody>
-              ${items.map((i) => `<tr><td>${i.description}</td><td style="text-align:center">${i.quantity}</td><td>${money(i.amount)}</td></tr>`).join("")}
+              ${items.map((i) => `<tr><td>${e(i.description)}</td><td style="text-align:center">${i.quantity}</td><td>${money(i.amount)}</td></tr>`).join("")}
             </tbody>
           </table>
           <div class="totals">
@@ -253,7 +254,7 @@ export function BillingPage() {
             <table style="margin-top:20px">
               <thead><tr><th>Payment</th><th style="text-align:center">Method</th><th>Amount</th></tr></thead>
               <tbody>
-                ${payments.filter((p) => p.amount > 0).map((p) => `<tr><td>${p.paymentNo ?? ""} · ${format(new Date(p.paidAt), "MMM d, yyyy")}</td><td style="text-align:center">${METHOD_LABELS[p.method] ?? p.method}</td><td>${money(p.amount)}</td></tr>`).join("")}
+                ${payments.filter((p) => p.amount > 0).map((p) => `<tr><td>${e(p.paymentNo)} · ${format(new Date(p.paidAt), "MMM d, yyyy")}</td><td style="text-align:center">${e(METHOD_LABELS[p.method] ?? p.method)}</td><td>${money(p.amount)}</td></tr>`).join("")}
               </tbody>
             </table>` : ""}
         </div>

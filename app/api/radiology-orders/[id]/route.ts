@@ -1,6 +1,7 @@
 import { requirePermission } from "@/lib/auth/guards";
 import { assertInput, ApiError, getIp, ok, route } from "@/lib/http";
 import { db } from "@/lib/db";
+import { safeUserSelect } from "@/lib/db/selects";
 import { logAudit } from "@/services/audit";
 import {
   submitRadiologyReport,
@@ -16,7 +17,7 @@ export const GET = route(async (req, ctx) => {
     where: { id },
     include: {
       patient: true,
-      doctor: { include: { user: true } },
+      doctor: { select: { user: { select: safeUserSelect } } },
     },
   });
   if (!order) throw new ApiError(404, "Radiology order not found");
