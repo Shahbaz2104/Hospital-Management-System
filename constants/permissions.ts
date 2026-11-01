@@ -245,7 +245,6 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     "reports:read",
     "reports:export",
     "analytics:read",
-    "dashboard:read",
     "profile:read",
     "notifications:read",
   ],
